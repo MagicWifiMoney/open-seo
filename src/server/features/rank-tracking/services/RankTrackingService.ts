@@ -48,6 +48,7 @@ async function createConfig(input: {
   locationName?: string;
   devices?: RankTrackingConfig["devices"];
   serpDepth: number;
+  trackCompetitors?: boolean;
   scheduleInterval?: RankTrackingConfig["scheduleInterval"];
   scheduleTime?: RankCheckScheduleTime;
 }) {
@@ -113,6 +114,9 @@ async function createConfig(input: {
       languageCode,
       devices: input.devices ?? "both",
       serpDepth: input.serpDepth,
+      ...(input.trackCompetitors !== undefined && {
+        trackCompetitors: input.trackCompetitors,
+      }),
       scheduleInterval,
       nextCheckAt,
       // Drop any stale skip reason from before it was archived so the
@@ -133,6 +137,7 @@ async function createConfig(input: {
     locationName,
     devices: input.devices ?? "both",
     serpDepth: input.serpDepth,
+    trackCompetitors: input.trackCompetitors ?? false,
     scheduleInterval,
     nextCheckAt,
     isActive: true,
@@ -156,6 +161,7 @@ async function updateConfig(
     locationName?: string | null;
     devices?: RankTrackingConfig["devices"];
     serpDepth?: number;
+    trackCompetitors?: boolean;
     scheduleInterval?: RankTrackingConfig["scheduleInterval"];
     scheduleTime?: RankCheckScheduleTime;
     isActive?: boolean;
@@ -197,6 +203,8 @@ async function updateConfig(
     updates.locationName = input.locationName;
   if (input.devices !== undefined) updates.devices = input.devices;
   if (input.serpDepth !== undefined) updates.serpDepth = input.serpDepth;
+  if (input.trackCompetitors !== undefined)
+    updates.trackCompetitors = input.trackCompetitors;
   if (input.isActive !== undefined) updates.isActive = input.isActive;
 
   const scheduleInterval = input.scheduleInterval ?? existing.scheduleInterval;

@@ -188,6 +188,7 @@ function RankTrackingConfigModalContent({
         : randomScheduleDate(),
     ),
     serpDepth: existingConfig?.serpDepth ?? 40,
+    trackCompetitors: existingConfig?.trackCompetitors ?? false,
   }));
 
   const form = useAppForm({
@@ -351,6 +352,15 @@ function RankTrackingConfigModalContent({
                     label="Search Depth"
                     items={DEPTH_ITEMS}
                     description="10 pages is ~8x more expensive than 1 page"
+                  />
+                )}
+              </form.AppField>
+
+              <form.AppField name="trackCompetitors">
+                {(field) => (
+                  <field.SwitchField
+                    label="Track competitors"
+                    description="Record where each saved project competitor ranks for every keyword. Uses the same results, but checks always crawl the full search depth, so they cost the full-depth price."
                   />
                 )}
               </form.AppField>

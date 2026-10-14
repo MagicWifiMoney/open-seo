@@ -8,6 +8,7 @@ import { DataforseoChargedTaskError } from "@/server/lib/dataforseo/envelope";
 import {
   fetchLiveSerp,
   fetchLocalSerpTaskResult,
+  fetchRankCheckSerp,
   fetchRankCheckTaskResult,
   postLocalSerpTasks,
   postRankCheckTasks,
@@ -334,6 +335,129 @@ describe("Maps task queue", () => {
     expect(await fetchLocalSerpTaskResult("task-b")).toEqual({
       status: "completed",
       items: [],
+    });
+  });
+});
+
+describe("competitor rank tracking", () => {
+  const serpResponse = Response.json.bind(Response, {
+    status_code: 20000,
+    tasks: [
+      {
+        status_code: 20000,
+        cost: 0.002,
+        path: ["v3", "serp", "google", "organic", "live", "advanced"],
+        result: [
+          {
+            items: [
+              {
+                type: "organic",
+                rank_group: 1,
+                domain: "blog.rival.com",
+                url: "https://blog.rival.com/a",
+              },
+              // A sitelink-style mention must not count as an organic match.
+              { type: "paid", rank_group: 1, domain: "other.com" },
+              {
+                type: "organic",
+                rank_group: 4,
+                domain: "example.com",
+                url: "https://example.com/p",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  const rankInput = {
+    keyword: "alpha",
+    keywordId: "kw-1",
+    locationCode: 2840,
+    languageCode: "en",
+    device: "desktop" as const,
+    targetDomain: "example.com",
+    depth: 20,
+  };
+
+  it("reads competitor positions from the same SERP and fetches full depth", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () => serpResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { data } = await fetchRankCheckSerp({
+      ...rankInput,
+      competitorDomains: ["rival.com", "other.com", "absent.com"],
+    });
+
+    expect(data.position).toBe(4);
+    // Subdomain matches; non-organic items and unseen domains are null.
+    expect(data.competitors).toEqual([
+      { domain: "rival.com", position: 1, url: "https://blog.rival.com/a" },
+      { domain: "other.com", position: null, url: null },
+      { domain: "absent.com", position: null, url: null },
+    ]);
+    const [body] = parseDataforseoRequestBody(
+      fetchMock.mock.calls[0]?.[1],
+    ) as Array<Record<string, unknown>>;
+    expect(body).not.toHaveProperty("stop_crawl_on_match");
+    expect(body).not.toHaveProperty("find_targets_in");
+  });
+
+  it("keeps the early stop and omits competitors when none are tracked", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () => serpResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { data } = await fetchRankCheckSerp(rankInput);
+
+    expect(data).not.toHaveProperty("competitors");
+    expect(
+      parseDataforseoRequestBody(fetchMock.mock.calls[0]?.[1]),
+    ).toMatchObject([{ stop_crawl_on_match: expect.any(Array) as unknown }]);
+  });
+
+  it("omits the early stop on queued posts when competitors are tracked", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(Response.json({ status_code: 20000, tasks: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await postRankCheckTasks({
+      tasks: [{ keyword: "alpha", keywordId: "kw-1", device: "desktop" }],
+      locationCode: 2840,
+      languageCode: "en",
+      depth: 20,
+      targetDomain: "example.com",
+      competitorDomains: ["rival.com"],
+    });
+
+    const [body] = parseDataforseoRequestBody(
+      fetchMock.mock.calls[0]?.[1],
+    ) as Array<Record<string, unknown>>;
+    expect(body).not.toHaveProperty("stop_crawl_on_match");
+  });
+
+  it("reads competitor positions from a collected queued task", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>().mockImplementation(async () => serpResponse()),
+    );
+
+    const outcome = await fetchRankCheckTaskResult({
+      taskId: "task-a",
+      keywordId: "kw-1",
+      keyword: "alpha",
+      targetDomain: "example.com",
+      competitorDomains: ["rival.com"],
+    });
+
+    expect(outcome).toMatchObject({
+      status: "completed",
+      result: { competitors: [{ domain: "rival.com", position: 1 }] },
     });
   });
 });

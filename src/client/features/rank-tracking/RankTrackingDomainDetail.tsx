@@ -26,6 +26,7 @@ import {
   countMatrixRuns,
   RankTrackingHistoryMatrix,
 } from "./RankTrackingHistoryMatrix";
+import { RankTrackingCompetitorGrid } from "./RankTrackingCompetitorGrid";
 import { RankTrackingTableToolbar } from "./RankTrackingTableToolbar";
 import { exportRankTracking } from "./RankTrackingTableParts";
 import type { RankTrackingConfig } from "@/types/schemas/rank-tracking";
@@ -383,6 +384,17 @@ export function RankTrackingDomainDetail({
             </QueryState>
           )}
         </div>
+
+        {config.trackCompetitors && (
+          <div className="border-t border-border p-4">
+            <RankTrackingCompetitorGrid
+              projectId={projectId}
+              configId={config.id}
+              domain={config.domain}
+              devices={config.devices}
+            />
+          </div>
+        )}
       </div>
 
       {pendingCheck && (

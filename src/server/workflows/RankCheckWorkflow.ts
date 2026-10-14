@@ -6,6 +6,7 @@ import {
 import { NonRetryableError } from "cloudflare:workflows";
 import { withPgClient } from "@/db";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
+import { AiVisibilityRepository } from "@/server/features/ai-visibility/repositories/AiVisibilityRepository";
 import { RankTrackingRepository } from "@/server/features/rank-tracking/repositories/RankTrackingRepository";
 import { failRunIfActive } from "@/server/features/rank-tracking/services/rankCheckRunGuards";
 import {
@@ -52,6 +53,7 @@ interface RankCheckParams {
 async function prepareRankCheckKeywords(input: {
   runId: string;
   configId: string;
+  projectId: string;
   billingCustomer: BillingCustomerContext;
   devices: RankCheckParams["devices"];
   serpDepth: number;
@@ -127,11 +129,25 @@ async function prepareRankCheckKeywords(input: {
     keywordsTotal: trackingKeywords.length,
   });
 
+  // Competitor positions come from the same SERP responses, so the only
+  // inputs needed are the saved domains. Loaded here so the list is fixed for
+  // the whole run, including replayed steps.
+  const config = await RankTrackingRepository.getConfigById({
+    configId: input.configId,
+    projectId: input.projectId,
+  });
+  const competitorDomains = config?.trackCompetitors
+    ? (await AiVisibilityRepository.listCompetitors(input.projectId)).map(
+        (c) => c.domain,
+      )
+    : [];
+
   return {
     keywords: trackingKeywords.map((kw) => ({
       id: kw.id,
       keyword: kw.keyword,
     })),
+    competitorDomains,
   };
 }
 
@@ -347,6 +363,7 @@ export class RankCheckWorkflow extends WorkflowEntrypoint<
           prepareRankCheckKeywords({
             runId,
             configId,
+            projectId,
             billingCustomer,
             devices,
             serpDepth,
@@ -371,6 +388,7 @@ export class RankCheckWorkflow extends WorkflowEntrypoint<
           devices,
           serpDepth,
           domain,
+          competitorDomains: prepareResult.competitorDomains,
           locationCode,
           languageCode,
           locationName,

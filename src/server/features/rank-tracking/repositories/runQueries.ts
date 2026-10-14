@@ -1,7 +1,11 @@
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { InferInsertModel } from "drizzle-orm";
 import { db } from "@/db";
-import { rankCheckRuns, rankSnapshots } from "@/db/schema";
+import {
+  rankCheckRuns,
+  rankCompetitorSnapshots,
+  rankSnapshots,
+} from "@/db/schema";
 import { executeInBatches } from "@/db/runBatch";
 
 // ---------------------------------------------------------------------------
@@ -113,6 +117,32 @@ export async function insertSnapshots(
           rankSnapshots.runId,
           rankSnapshots.trackingKeywordId,
           rankSnapshots.device,
+        ],
+      }),
+  );
+}
+
+/**
+ * Persist competitor positions read from the same SERP responses as the
+ * target snapshots. Idempotent for workflow retries: the unique index on
+ * (run, keyword, device, competitor) turns a replay into a no-op. Chunked by
+ * executeInBatches, which keeps each statement under D1's bound-variable cap.
+ */
+export async function insertCompetitorSnapshots(
+  snapshots: Array<
+    Omit<InferInsertModel<typeof rankCompetitorSnapshots>, "id" | "checkedAt">
+  >,
+) {
+  await executeInBatches(snapshots, (tx, snapshot) =>
+    tx
+      .insert(rankCompetitorSnapshots)
+      .values(snapshot)
+      .onConflictDoNothing({
+        target: [
+          rankCompetitorSnapshots.runId,
+          rankCompetitorSnapshots.trackingKeywordId,
+          rankCompetitorSnapshots.device,
+          rankCompetitorSnapshots.competitorDomain,
         ],
       }),
   );

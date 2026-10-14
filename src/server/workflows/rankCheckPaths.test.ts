@@ -6,6 +6,7 @@ import { runLiveCheck } from "./rankCheckPaths";
 const mocks = vi.hoisted(() => ({
   getSnapshotsForRun: vi.fn(),
   insertSnapshots: vi.fn(),
+  insertCompetitorSnapshots: vi.fn(),
   updateRun: vi.fn(),
   fetchRankCheckTaskResult: vi.fn(),
   rankCheckBatch: vi.fn(),
@@ -34,7 +35,7 @@ const keywords = Array.from({ length: 11 }, (_, index) => ({
   keyword: `keyword ${index}`,
 }));
 
-function runManualCheck() {
+function runManualCheck(competitorDomains?: string[]) {
   return runLiveCheck(
     // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- only sleep is reached; pgStep is mocked
     { sleep: vi.fn() } as unknown as WorkflowStep,
@@ -50,6 +51,7 @@ function runManualCheck() {
       devices: "desktop",
       serpDepth: 10,
       domain: "openseo.so",
+      competitorDomains,
       locationCode: 2840,
       languageCode: "en",
       runId: "run_1",
@@ -147,5 +149,59 @@ describe("runLiveCheck", () => {
 
     expect(await runManualCheck()).toBeNull();
     expect(mocks.rankCheckTaskPost).not.toHaveBeenCalled();
+  });
+
+  it("persists competitor rows with the snapshots and forwards the domains", async () => {
+    mocks.rankCheckBatch.mockImplementation(
+      async (inputs: RankCheckTaskInput[]) =>
+        inputs.map((input) => ({
+          status: "fulfilled",
+          value: {
+            ...input,
+            position: 3,
+            url: null,
+            serpFeatures: [],
+            competitors: [
+              { domain: "rival.com", position: 1, url: "https://rival.com/" },
+            ],
+          },
+        })),
+    );
+    mocks.getSnapshotsForRun.mockResolvedValue(
+      keywords.map((kw) => ({ trackingKeywordId: kw.id, device: "desktop" })),
+    );
+
+    await runManualCheck(["rival.com"]);
+
+    expect(mocks.rankCheckBatch).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ competitorDomains: ["rival.com"] }),
+      ]),
+    );
+    expect(mocks.insertCompetitorSnapshots).toHaveBeenCalledWith([
+      {
+        runId: "run_1",
+        trackingKeywordId: "kw_0",
+        device: "desktop",
+        competitorDomain: "rival.com",
+        position: 1,
+        url: "https://rival.com/",
+      },
+      ...keywords
+        .slice(1, 10)
+        .map((kw): unknown =>
+          expect.objectContaining({ trackingKeywordId: kw.id }),
+        ),
+    ]);
+  });
+
+  it("writes no competitor rows when none are tracked", async () => {
+    mocks.getSnapshotsForRun.mockResolvedValue(
+      keywords.map((kw) => ({ trackingKeywordId: kw.id, device: "desktop" })),
+    );
+
+    await runManualCheck();
+
+    expect(mocks.insertCompetitorSnapshots).not.toHaveBeenCalled();
   });
 });

@@ -41,12 +41,44 @@ function mapResultsToSnapshotRows(
   }));
 }
 
+function mapResultsToCompetitorRows(
+  runId: string,
+  results: RankCheckResultWithDevice[],
+) {
+  return results.flatMap((r) =>
+    (r.competitors ?? []).map((c) => ({
+      runId,
+      trackingKeywordId: r.keywordId,
+      device: r.device,
+      competitorDomain: c.domain,
+      position: c.position,
+      url: c.url,
+    })),
+  );
+}
+
+/** Persist target snapshots plus any competitor positions from the same SERPs. */
+async function persistResults(
+  runId: string,
+  results: RankCheckResultWithDevice[],
+) {
+  await RankTrackingRepository.insertSnapshots(
+    mapResultsToSnapshotRows(runId, results),
+  );
+  const competitorRows = mapResultsToCompetitorRows(runId, results);
+  if (competitorRows.length > 0) {
+    await RankTrackingRepository.insertCompetitorSnapshots(competitorRows);
+  }
+}
+
 interface CheckContext {
   client: ReturnType<typeof createDataforseoClient>;
   keywords: KeywordEntry[];
   devices: RankTrackingConfig["devices"];
   serpDepth: number;
   domain: string;
+  /** Saved project competitors to read from the same SERPs; empty = off. */
+  competitorDomains?: string[];
   locationCode: number;
   languageCode: string;
   locationName?: string;
@@ -96,6 +128,7 @@ async function checkBatchLive(
         locationName: ctx.locationName,
         device: task.device,
         targetDomain: ctx.domain,
+        competitorDomains: ctx.competitorDomains,
         depth: ctx.serpDepth,
       })),
     );
@@ -129,9 +162,7 @@ async function checkBatchLive(
     await RankTrackingRepository.setRunErrorIfEmpty(ctx.runId, firstError);
   }
   if (results.length > 0) {
-    await RankTrackingRepository.insertSnapshots(
-      mapResultsToSnapshotRows(ctx.runId, results),
-    );
+    await persistResults(ctx.runId, results);
   }
   return results.length;
 }
@@ -284,6 +315,7 @@ async function collectQueuedRound(
           keywordId: task.keywordId,
           keyword: task.keyword,
           targetDomain: ctx.domain,
+          competitorDomains: ctx.competitorDomains,
         }),
       ),
     );
@@ -312,9 +344,7 @@ async function collectQueuedRound(
   }
 
   if (completed.length > 0) {
-    await RankTrackingRepository.insertSnapshots(
-      mapResultsToSnapshotRows(ctx.runId, completed),
-    );
+    await persistResults(ctx.runId, completed);
     // Progress for the UI; finalize recounts from the DB anyway.
     const snapshots = await RankTrackingRepository.getSnapshotsForRun(
       ctx.runId,
@@ -385,6 +415,7 @@ export async function runQueuedCheck(
             locationName: ctx.locationName,
             depth: ctx.serpDepth,
             targetDomain: ctx.domain,
+            competitorDomains: ctx.competitorDomains,
           }),
       );
     } catch (error) {

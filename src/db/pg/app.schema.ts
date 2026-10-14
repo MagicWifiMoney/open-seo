@@ -238,6 +238,9 @@ export const rankTrackingConfigs = pgTable(
     lastCheckedAt: timestampColumn("last_checked_at"),
     nextCheckAt: timestampColumn("next_check_at"),
     lastSkipReason: text("last_skip_reason"),
+    // When on, each check also records where every saved project competitor
+    // ranks, read from the same SERP response (no extra API calls).
+    trackCompetitors: boolean("track_competitors").notNull().default(false),
     createdAt: timestampColumn("created_at").notNull().default(isoNow),
   },
   (table) => [
@@ -352,6 +355,33 @@ export const rankSnapshots = pgTable(
       table.runId,
       table.trackingKeywordId,
       table.device,
+    ),
+  ],
+);
+
+// One row per keyword per device per competitor per check run, read from the
+// same SERP response as rankSnapshots.
+export const rankCompetitorSnapshots = pgTable(
+  "rank_competitor_snapshots",
+  {
+    id: serial("id").primaryKey(),
+    runId: text("run_id")
+      .notNull()
+      .references(() => rankCheckRuns.id, { onDelete: "cascade" }),
+    // No FK to rankTrackingKeywords, same as rankSnapshots.
+    trackingKeywordId: text("tracking_keyword_id").notNull(),
+    device: text("device", { enum: ["desktop", "mobile"] }).notNull(),
+    competitorDomain: text("competitor_domain").notNull(),
+    position: integer("position"), // null = not seen in the crawled depth
+    url: text("url"),
+    checkedAt: timestampColumn("checked_at").notNull().default(isoNow),
+  },
+  (table) => [
+    uniqueIndex("rank_competitor_snapshots_run_keyword_device_domain_idx").on(
+      table.runId,
+      table.trackingKeywordId,
+      table.device,
+      table.competitorDomain,
     ),
   ],
 );

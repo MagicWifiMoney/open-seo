@@ -235,6 +235,11 @@ export const rankTrackingConfigs = sqliteTable(
     lastCheckedAt: text("last_checked_at"),
     nextCheckAt: text("next_check_at"),
     lastSkipReason: text("last_skip_reason"),
+    // When on, each check also records where every saved project competitor
+    // ranks, read from the same SERP response (no extra API calls).
+    trackCompetitors: integer("track_competitors", { mode: "boolean" })
+      .notNull()
+      .default(false),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(current_timestamp)`),
@@ -361,6 +366,35 @@ export const rankSnapshots = sqliteTable(
       table.runId,
       table.trackingKeywordId,
       table.device,
+    ),
+  ],
+);
+
+// One row per keyword per device per competitor per check run, read from the
+// same SERP response as rankSnapshots.
+export const rankCompetitorSnapshots = sqliteTable(
+  "rank_competitor_snapshots",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    runId: text("run_id")
+      .notNull()
+      .references(() => rankCheckRuns.id, { onDelete: "cascade" }),
+    // No FK to rankTrackingKeywords, same as rankSnapshots.
+    trackingKeywordId: text("tracking_keyword_id").notNull(),
+    device: text("device", { enum: ["desktop", "mobile"] }).notNull(),
+    competitorDomain: text("competitor_domain").notNull(),
+    position: integer("position"), // null = not seen in the crawled depth
+    url: text("url"),
+    checkedAt: text("checked_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (table) => [
+    uniqueIndex("rank_competitor_snapshots_run_keyword_device_domain_idx").on(
+      table.runId,
+      table.trackingKeywordId,
+      table.device,
+      table.competitorDomain,
     ),
   ],
 );

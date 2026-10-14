@@ -12,7 +12,11 @@ import {
   sql,
 } from "drizzle-orm";
 import { db } from "@/db";
-import { rankCheckRuns, rankSnapshots } from "@/db/schema";
+import {
+  rankCheckRuns,
+  rankCompetitorSnapshots,
+  rankSnapshots,
+} from "@/db/schema";
 import { toRankTrackingTimestamp } from "@/server/features/rank-tracking/rankTrackingTimestamps";
 
 function completedRunIdsForConfig(configId: string) {
@@ -143,6 +147,77 @@ export async function getPositionMatrix(
       ),
     )
     .orderBy(asc(rankCheckRuns.startedAt));
+}
+
+/**
+ * Raw rows behind the competitor grid: the target's and each competitor's
+ * positions for one device across the last `runLimit` completed runs that
+ * recorded competitor data. Subset runs count, because a subset run is the
+ * newest check for the keywords it covers; the service picks the latest and
+ * previous row per keyword.
+ */
+export async function getCompetitorMatrixRows(
+  configId: string,
+  device: "desktop" | "mobile",
+  runLimit: number,
+) {
+  const recentRunIds = db
+    .select({ id: rankCheckRuns.id })
+    .from(rankCheckRuns)
+    .where(
+      and(
+        eq(rankCheckRuns.configId, configId),
+        eq(rankCheckRuns.status, "completed"),
+        inArray(
+          rankCheckRuns.id,
+          db
+            .select({ id: rankCompetitorSnapshots.runId })
+            .from(rankCompetitorSnapshots),
+        ),
+      ),
+    )
+    .orderBy(desc(rankCheckRuns.startedAt))
+    .limit(runLimit);
+
+  const competitors = await db
+    .select({
+      runId: rankCompetitorSnapshots.runId,
+      checkedAt: rankCheckRuns.startedAt,
+      trackingKeywordId: rankCompetitorSnapshots.trackingKeywordId,
+      domain: rankCompetitorSnapshots.competitorDomain,
+      position: rankCompetitorSnapshots.position,
+      url: rankCompetitorSnapshots.url,
+    })
+    .from(rankCompetitorSnapshots)
+    .innerJoin(
+      rankCheckRuns,
+      eq(rankCompetitorSnapshots.runId, rankCheckRuns.id),
+    )
+    .where(
+      and(
+        inArray(rankCompetitorSnapshots.runId, recentRunIds),
+        eq(rankCompetitorSnapshots.device, device),
+      ),
+    );
+
+  const target = await db
+    .select({
+      runId: rankSnapshots.runId,
+      checkedAt: rankCheckRuns.startedAt,
+      trackingKeywordId: rankSnapshots.trackingKeywordId,
+      position: rankSnapshots.position,
+      url: rankSnapshots.url,
+    })
+    .from(rankSnapshots)
+    .innerJoin(rankCheckRuns, eq(rankSnapshots.runId, rankCheckRuns.id))
+    .where(
+      and(
+        inArray(rankSnapshots.runId, recentRunIds),
+        eq(rankSnapshots.device, device),
+      ),
+    );
+
+  return { competitors, target };
 }
 
 /**
