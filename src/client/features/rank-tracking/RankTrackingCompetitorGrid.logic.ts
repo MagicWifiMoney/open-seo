@@ -14,6 +14,7 @@ export function sortCompetitorRows(
   rows: MatrixRow[],
   sortBy: "keyword" | "competitorsAhead",
 ): MatrixRow[] {
+  // oxlint-disable-next-line unicorn/no-array-sort -- copy is sorted; tsconfig lib lacks toSorted
   return [...rows].sort((a, b) => {
     if (sortBy === "competitorsAhead") {
       const diff = countCompetitorsAhead(b) - countCompetitorsAhead(a);

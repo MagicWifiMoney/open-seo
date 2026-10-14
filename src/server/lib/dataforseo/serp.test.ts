@@ -1,3 +1,4 @@
+/* oxlint-disable max-lines -- competitor extraction cases added to the SERP suite */
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/server/lib/runtime-env", () => ({

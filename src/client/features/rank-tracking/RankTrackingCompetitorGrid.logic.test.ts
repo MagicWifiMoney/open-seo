@@ -4,12 +4,13 @@ import {
   sortCompetitorRows,
 } from "./RankTrackingCompetitorGrid.logic";
 
+const cell = (position: number | null) => ({
+  position,
+  previousPosition: null,
+  url: null,
+});
+
 function row(keyword: string, mine: number | null, rival: number | null) {
-  const cell = (position: number | null) => ({
-    position,
-    previousPosition: null,
-    url: null,
-  });
   return {
     trackingKeywordId: keyword,
     keyword,

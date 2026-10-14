@@ -1,3 +1,4 @@
+import { DataforseoSpendCard } from "@/client/features/rank-tracking/DataforseoSpendCard";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, Play, Plus, Settings2 } from "lucide-react";
@@ -173,6 +174,7 @@ function PromptTrackingContent({
         title="Prompt Tracking"
         description="Track the prompts your customers use with AI. Inspect where your business is mentioned or cited."
       />
+      <DataforseoSpendCard projectId={projectId} />
       {!state.configured ? (
         <EmptyState
           variant="card"

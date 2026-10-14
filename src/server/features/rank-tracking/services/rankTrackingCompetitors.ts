@@ -38,6 +38,7 @@ function latestTwo(entries: RunPosition[] | undefined): RankCompetitorCell {
   if (!entries || entries.length === 0) {
     return { position: null, previousPosition: null, url: null };
   }
+  // oxlint-disable-next-line unicorn/no-array-sort -- sorts a fresh copy; tsconfig lib lacks toSorted
   const sorted = [...entries].sort((a, b) =>
     b.checkedAt.localeCompare(a.checkedAt),
   );
@@ -98,6 +99,7 @@ export async function getCompetitorMatrix(input: {
   const competitors = savedCompetitors
     .map((c) => c.domain)
     .filter((domain) => seenDomains.has(domain))
+    // oxlint-disable-next-line unicorn/no-array-sort -- sorts a fresh copy; tsconfig lib lacks toSorted
     .sort((a, b) => a.localeCompare(b));
 
   const rows = keywords.map((kw) => ({
@@ -115,6 +117,7 @@ export async function getCompetitorMatrix(input: {
   const latestCheckedAt =
     raw.competitors
       .map((r) => r.checkedAt)
+      // oxlint-disable-next-line unicorn/no-array-sort -- sorts a fresh copy; tsconfig lib lacks toSorted
       .sort((a, b) => b.localeCompare(a))[0] ?? null;
 
   return { device: input.device, competitors, rows, latestCheckedAt };
