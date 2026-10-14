@@ -19,6 +19,12 @@ export async function getGoogleOAuthClientConfig(): Promise<GoogleOAuthClientCon
 export async function hasGoogleOAuthConfig(
   config?: GoogleOAuthClientConfig | null,
 ): Promise<boolean> {
+  // The service-account override (serviceAccountToken.ts) needs no OAuth client.
+  if (
+    config === undefined &&
+    (await getOptionalEnvValue("GOOGLE_SERVICE_ACCOUNT_JSON"))?.trim()
+  )
+    return true;
   const oauthConfig =
     config === undefined ? await getGoogleOAuthClientConfig() : config;
   if (!oauthConfig) return false;

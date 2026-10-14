@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { account } from "@/db/schema";
 import { getAuth } from "@/lib/auth";
 import { resolveUserContextFromHeaders } from "@/middleware/ensure-user/resolve";
+import { getOptionalEnvValue } from "@/server/lib/runtime-env";
 import { AppError } from "@/server/lib/errors";
 import { responseForAppError } from "@/server/lib/http-errors";
 import { getPublicOrigin } from "@/server/mcp/public-origin";
@@ -18,6 +19,10 @@ import {
   getGoogleOAuthClientConfig,
   hasGoogleOAuthConfig,
 } from "./oauth-config";
+import {
+  getServiceAccountAccessToken,
+  SERVICE_ACCOUNT_GRANT_ID,
+} from "./serviceAccountToken";
 import { getGoogleAccountId } from "./googleIdToken";
 import {
   consumeState,
@@ -316,9 +321,16 @@ export async function getGoogleAccessToken(input: {
   providerId: string;
   accountId?: string;
 }): Promise<string> {
+  if (
+    input.accountId === SERVICE_ACCOUNT_GRANT_ID ||
+    (await getOptionalEnvValue("GOOGLE_SERVICE_ACCOUNT_JSON"))
+  ) {
+    return getServiceAccountAccessToken();
+  }
   const [grant] = await db
     .select({
       id: account.id,
+      accountId: account.accountId,
       accessToken: account.accessToken,
       refreshToken: account.refreshToken,
       accessTokenExpiresAt: account.accessTokenExpiresAt,
@@ -333,6 +345,9 @@ export async function getGoogleAccessToken(input: {
     )
     .limit(1);
   if (!grant) throw new Error(`No ${input.providerId} grant for this user.`);
+  if (grant.accountId === SERVICE_ACCOUNT_GRANT_ID) {
+    return getServiceAccountAccessToken();
+  }
   const { encrypt, decrypt } = await tokenCrypto();
   const expiresAt = grant.accessTokenExpiresAt?.getTime();
   const fresh =
