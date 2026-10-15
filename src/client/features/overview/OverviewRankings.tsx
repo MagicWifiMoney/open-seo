@@ -142,7 +142,7 @@ function Body({ view, device }: { view: RankingsView; device: string }) {
           Checked {view.checked} of {view.total} keywords
         </Badge>
         <span className="text-sm text-muted-foreground">
-          Latest run {runDay(view.latest.checkedAt)}
+          Newest check of each keyword, latest {runDay(view.latest.checkedAt)}
           {view.previous
             ? `, compared with the previous complete run on ${runDay(view.previous.checkedAt)}`
             : ", no earlier complete run to compare with"}
@@ -156,7 +156,7 @@ function Body({ view, device }: { view: RankingsView; device: string }) {
         <p className="mt-1">
           {COVERAGE_MEANING}
           {view.partial
-            ? " This run did not check every keyword, so the bands below can undercount."
+            ? " Some keywords have no check yet. They are not counted as not ranking, so the bands below can undercount."
             : ""}
         </p>
       </details>

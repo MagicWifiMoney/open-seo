@@ -1,4 +1,6 @@
 import { reverse, sort } from "remeda";
+import type { RankTrackingRow } from "@/types/schemas/rank-tracking";
+import type { OverviewDevice } from "@/types/schemas/overview";
 
 export type RunCoverage = {
   runId: string;
@@ -100,10 +102,6 @@ function byKeyword(a: Mover, b: Mover): number {
   return a.keyword.localeCompare(b.keyword);
 }
 
-function checked(run: RunCoverage): number {
-  return run.top3 + run.top4to10 + run.top11to20 + run.notRanking;
-}
-
 function positionsFor(cells: PositionCell[], runId: string) {
   const positions = new Map<string, number | null>();
   for (const cell of cells) {
@@ -128,17 +126,22 @@ function countBands(positions: Map<string, number | null>) {
 
 /** Bands, coverage and movers for one tracker and device.
  *
- *  `runs` are the completed full runs, oldest first. Coverage comes from the
- *  run's own counts: `notChecked` is keywords whose check failed and left no
- *  row, so it is never counted as "not ranking". The comparison run is the
- *  most recent earlier run that checked every keyword. Keywords no longer
- *  tracked (not in `names`) are left out. */
+ *  The current bands use the newest check of each keyword (`latestRows`,
+ *  which spans every completed run including subset re-checks). A keyword
+ *  with no check is never counted as "not ranking". `runs` are the completed
+ *  full runs, oldest first; the comparison run is the most recent earlier
+ *  run that checked every keyword, and `before` counts come only from it.
+ *  Keywords no longer tracked (not in `names`) are left out. */
 export function buildRankingsView(input: {
   runs: RunCoverage[];
   cells: PositionCell[];
   names: Map<string, string>;
+  latestRows: RankTrackingRow[];
+  device: OverviewDevice;
+  /** Newest check date among latestRows, when known. */
+  latestCheckedAt?: string | null;
 }): RankingsView | null {
-  const { runs, cells, names } = input;
+  const { runs, cells, names, latestRows, device, latestCheckedAt } = input;
   const latest = runs.at(-1);
   if (!latest) return null;
 
@@ -149,7 +152,12 @@ export function buildRankingsView(input: {
 
   const live = (positions: Map<string, number | null>) =>
     new Map([...positions].filter(([id]) => names.has(id)));
-  const nowPositions = live(positionsFor(cells, latest.runId));
+  const nowPositions = new Map<string, number | null>();
+  for (const row of latestRows) {
+    if (row[device].hasCheck === true) {
+      nowPositions.set(row.trackingKeywordId, row[device].position);
+    }
+  }
   const beforePositions = previous
     ? live(positionsFor(cells, previous.runId))
     : null;
@@ -179,15 +187,19 @@ export function buildRankingsView(input: {
   gains.sort((a, b) => b.change - a.change || byKeyword(a, b));
   losses.sort((a, b) => a.change - b.change || byKeyword(a, b));
 
-  const checkedCount = checked(latest);
+  const checkedCount = nowPositions.size;
+  const totalCount = latestRows.length;
   return {
-    latest: { runId: latest.runId, checkedAt: latest.checkedAt },
+    latest: {
+      runId: latest.runId,
+      checkedAt: latestCheckedAt ?? latest.checkedAt,
+    },
     previous: previous
       ? { runId: previous.runId, checkedAt: previous.checkedAt }
       : null,
     checked: checkedCount,
-    total: checkedCount + latest.notChecked,
-    partial: latest.notChecked > 0,
+    total: totalCount,
+    partial: checkedCount < totalCount,
     bands: BANDS.map((band) => ({
       ...band,
       count: nowCounts[band.key],

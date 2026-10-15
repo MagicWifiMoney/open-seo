@@ -64,4 +64,40 @@ describe("getLatestResults", () => {
       },
     });
   });
+
+  it("marks hasCheck only for keywords with a snapshot", async () => {
+    mocks.getKeywordsForConfig.mockResolvedValue([
+      {
+        id: "kw_1",
+        keyword: "a",
+        searchVolume: 1,
+        keywordDifficulty: 1,
+        cpc: 1,
+      },
+      {
+        id: "kw_2",
+        keyword: "b",
+        searchVolume: 1,
+        keywordDifficulty: 1,
+        cpc: 1,
+      },
+    ]);
+    mocks.getLatestSnapshotsForKeywords.mockResolvedValue([
+      {
+        trackingKeywordId: "kw_1",
+        device: "desktop",
+        runId: "run_1",
+        checkedAt: "2026-08-01 10:00:00",
+        position: null,
+        url: null,
+        serpFeatures: null,
+      },
+    ]);
+    mocks.getLatestRunForConfig.mockResolvedValue(null);
+    const result = await getLatestResults("config_1", "project_1");
+    const byId = new Map(result.rows.map((r) => [r.trackingKeywordId, r]));
+    expect(byId.get("kw_1")?.desktop.hasCheck).toBe(true);
+    expect(byId.get("kw_1")?.mobile.hasCheck).toBe(false);
+    expect(byId.get("kw_2")?.desktop.hasCheck).toBe(false);
+  });
 });

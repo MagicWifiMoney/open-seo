@@ -99,12 +99,12 @@ function describeRankings(summary: RankSummary): string {
   const where = `Rank tracker (organic positions, ${summary.device}, checked ${summary.checked} of ${summary.total} keywords)`;
   const partial =
     summary.checked < summary.total
-      ? " This run did not check every keyword, so counts can undercount."
+      ? " Some keywords have no check yet and are not counted as not ranking, so counts can undercount."
       : "";
   if (summary.topTenBefore === null || summary.previousLabel === null) {
-    return `${where}: ${summary.topTenNow} keywords were in the top 10 on ${summary.latestLabel}. There is no earlier complete run to compare with.${partial}`;
+    return `${where}: ${summary.topTenNow} keywords were in the top 10 by the newest check of each keyword, latest ${summary.latestLabel}. There is no earlier complete run to compare with.${partial}`;
   }
-  return `${where}: ${summary.topTenNow} keywords were in the top 10 on ${summary.latestLabel}, against ${summary.topTenBefore} in the previous complete run on ${summary.previousLabel}.${partial}`;
+  return `${where}: ${summary.topTenNow} keywords were in the top 10 by the newest check of each keyword, latest ${summary.latestLabel}, against ${summary.topTenBefore} in the previous complete run on ${summary.previousLabel}.${partial}`;
 }
 
 function describeNewPages(summary: NewPagesSummary, input: SentenceInput) {

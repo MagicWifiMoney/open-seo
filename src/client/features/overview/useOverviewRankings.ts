@@ -81,8 +81,11 @@ export function useOverviewRankings(input: {
       names: new Map(
         namesQuery.data.rows.map((row) => [row.trackingKeywordId, row.keyword]),
       ),
+      latestRows: namesQuery.data.rows,
+      device,
+      latestCheckedAt: namesQuery.data.run?.lastCheckedAt ?? null,
     });
-  }, [trendQuery.data, matrixQuery.data, namesQuery.data]);
+  }, [trendQuery.data, matrixQuery.data, namesQuery.data, device]);
 
   const loading =
     configsQuery.isPending ||

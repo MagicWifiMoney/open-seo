@@ -33,6 +33,8 @@ export interface RankTrackingDeviceResult {
   previousPosition: number | null;
   rankingUrl: string | null;
   serpFeatures: string[];
+  /** True when the keyword has a snapshot for this device. */
+  hasCheck?: boolean;
 }
 
 export interface RankTrackingRow {

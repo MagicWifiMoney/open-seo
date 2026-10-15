@@ -163,7 +163,9 @@ function positionTile(
 function rankTile(summary: RankSummary): StatTile {
   const coverage = `checked ${summary.checked} of ${summary.total} keywords`;
   const partial =
-    summary.checked < summary.total ? " Partial run, may undercount." : "";
+    summary.checked < summary.total
+      ? " Some keywords unchecked and not counted as not ranking, so it may undercount."
+      : "";
   const was =
     summary.topTenBefore !== null && summary.previousLabel !== null
       ? ` Was ${summary.topTenBefore} on ${summary.previousLabel}.`
