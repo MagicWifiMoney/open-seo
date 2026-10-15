@@ -1,10 +1,19 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CardShell } from "@/client/components/CardShell";
 import { QueryError } from "@/client/components/QueryState";
 import { Button } from "@/client/components/ui/button";
 import { getBacklinksOverview } from "@/serverFunctions/backlinks";
 import { getDashboardActivation } from "@/serverFunctions/dashboard";
-import { formatCheckedAt, formatOffsiteCount } from "./overviewOffsite";
+import {
+  listOffsiteSnapshots,
+  saveOffsiteSnapshot,
+} from "@/serverFunctions/offsite";
+import { OverviewOutreachLog } from "./OverviewOutreachLog";
+import {
+  formatCheckedAt,
+  formatOffsiteCount,
+  groupSnapshotsByMonth,
+} from "./overviewOffsite";
 
 const SOURCE = "DataForSEO backlinks (results can be a few hours old)";
 
@@ -16,10 +25,33 @@ export function OverviewOffsiteAuthority({ projectId }: { projectId: string }) {
   });
   const domain = activation.data?.domain ?? null;
 
+  const queryClient = useQueryClient();
+  const historyKey = ["offsiteSnapshots", projectId];
+  const history = useQuery({
+    queryKey: historyKey,
+    queryFn: () => listOffsiteSnapshots({ data: { projectId } }),
+  });
+  const saveSnapshot = useMutation({
+    mutationFn: saveOffsiteSnapshot,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: historyKey }),
+  });
+
   const check = useMutation({
     mutationFn: (target: string) =>
       getBacklinksOverview({ data: { projectId, target, scope: "domain" } }),
+    onSuccess: (overview, target) =>
+      saveSnapshot.mutate({
+        data: {
+          projectId,
+          domain: target,
+          referringDomains: overview.summary.referringDomains,
+          backlinks: overview.summary.backlinks,
+          fetchedAt: overview.fetchedAt,
+        },
+      }),
   });
+
+  const months = groupSnapshotsByMonth(history.data ?? []);
 
   const result = check.data;
   const checkedAt = result ? formatCheckedAt(result.fetchedAt) : null;
@@ -111,11 +143,68 @@ export function OverviewOffsiteAuthority({ projectId }: { projectId: string }) {
             good ones from relevant local sites helps, but it is not a ranking
             guarantee.
           </p>
-          <p className="text-xs text-muted-foreground">
-            We keep a month by month history once snapshots are saved. Until
-            then this is today&apos;s number only, and the outreach log is kept
-            separately.
-          </p>
+          {saveSnapshot.isError ? (
+            <p className="text-sm text-destructive">
+              The numbers above were not saved to the history. Click Check again
+              to retry.
+            </p>
+          ) : null}
+
+          <div className="space-y-2 border-t pt-3">
+            <h3 className="text-sm font-semibold">Month by month</h3>
+            {history.isError && !history.data ? (
+              <QueryError
+                error={history.error}
+                fallback="Could not load the saved history"
+                onRetry={() => void history.refetch()}
+                isRetrying={history.isFetching}
+              />
+            ) : history.isPending ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : months.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No snapshots saved yet. Click Check referring domains now to
+                save the first one.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="text-xs text-muted-foreground">
+                    <tr>
+                      <th className="py-1 pr-3 font-medium">Month</th>
+                      <th className="py-1 pr-3 font-medium">
+                        Referring domains
+                      </th>
+                      <th className="py-1 pr-3 font-medium">
+                        Change from last month
+                      </th>
+                      <th className="py-1 font-medium">Checked</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {months.map((row) => (
+                      <tr key={row.month} className="border-t">
+                        <td className="py-1 pr-3">{row.label}</td>
+                        <td className="py-1 pr-3 tabular-nums">
+                          {formatOffsiteCount(row.referringDomains)}
+                        </td>
+                        <td className="py-1 pr-3">{row.change}</td>
+                        <td className="py-1 whitespace-nowrap">
+                          {row.checkedDate}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Source: {SOURCE}. Each check is saved automatically, and the last
+              check of each month is shown.
+            </p>
+          </div>
+
+          <OverviewOutreachLog projectId={projectId} />
         </div>
       </CardShell>
     </section>
