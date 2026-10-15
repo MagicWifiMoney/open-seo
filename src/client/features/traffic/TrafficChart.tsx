@@ -30,6 +30,8 @@ export function TrafficChart({
   launch,
   launchKey,
   baselineValue,
+  markerHidden = false,
+  baselineNote,
 }: {
   buckets: Bucket[];
   metric: TrafficMetric;
@@ -39,6 +41,10 @@ export function TrafficChart({
   launchKey: string | null;
   /** Pre-launch average for one bucket of this size; null if unavailable. */
   baselineValue: number | null;
+  /** The viewer turned the launch marker off. */
+  markerHidden?: boolean;
+  /** Replaces the baseline caption when no baseline is drawn on purpose. */
+  baselineNote?: string;
 }) {
   const field = metricField(metric);
   const config = {
@@ -104,7 +110,7 @@ export function TrafficChart({
               }}
             />
           ) : null}
-          {launchKey ? (
+          {launchKey && !markerHidden ? (
             <ReferenceLine
               x={launchKey}
               stroke="var(--color-destructive)"
@@ -120,12 +126,16 @@ export function TrafficChart({
         </AreaChart>
       </ChartContainer>
       <p className="text-xs text-muted-foreground">
-        {launchKey
-          ? `Vertical line: site launch (${formatDay(launch)}).`
-          : `Site launch (${formatDay(launch)}) is outside this range.`}{" "}
-        {baselineValue !== null
-          ? `Dashed line: pre-launch average per ${unit}, from complete ${granularity === "month" ? "months" : "weeks"} only.`
-          : "No complete pre-launch period, so no baseline line."}
+        {markerHidden
+          ? "Launch marker hidden."
+          : launchKey
+            ? `Vertical line: site launch (${formatDay(launch)}).`
+            : `Site launch (${formatDay(launch)}) is outside this range.`}{" "}
+        {baselineNote
+          ? baselineNote
+          : baselineValue !== null
+            ? `Dashed line: pre-launch average per ${unit}, from complete ${granularity === "month" ? "months" : "weeks"} only.`
+            : "No complete pre-launch period, so no baseline line."}
       </p>
     </div>
   );

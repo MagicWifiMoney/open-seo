@@ -8,6 +8,7 @@ import {
   completeBuckets,
   daysBetween,
   fillDays,
+  isComparableAcrossLaunch,
   launchBucketKey,
   monthEnd,
   percentChange,
@@ -155,9 +156,17 @@ describe("post vs baseline math", () => {
       { sessions: 140, users: 56, keyEvents: 14 },
       { sessions: 70, users: 35, keyEvents: 7 },
     );
-    expect(result.sessions.delta).toEqual({ absolute: 70, percent: 100 });
-    expect(result.users.delta.percent).toBe(60);
-    expect(result.key_events.delta.absolute).toBe(7);
+    expect(result.sessions?.delta).toEqual({ absolute: 70, percent: 100 });
+    expect(result.users?.delta.percent).toBe(60);
+  });
+  it("never compares key events across the launch", () => {
+    const result = compareAverages(
+      { sessions: 140, users: 56, keyEvents: 14 },
+      { sessions: 70, users: 35, keyEvents: 7 },
+    );
+    expect(result.key_events).toBeNull();
+    expect(isComparableAcrossLaunch("key_events")).toBe(false);
+    expect(isComparableAcrossLaunch("sessions")).toBe(true);
   });
   it("returns null percent for a zero base and handles declines", () => {
     expect(percentChange(5, 0)).toBeNull();

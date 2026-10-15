@@ -19,6 +19,7 @@ import {
   formatDay,
   formatNumber,
   formatPercent,
+  KEY_EVENTS_NOT_COMPARABLE,
   METRIC_LABELS,
 } from "./trafficFormat";
 import { trafficCsv, type TrafficTableRow } from "./trafficCsv";
@@ -42,8 +43,11 @@ export function TrafficTable({
         <div>
           <h2 className="text-base font-semibold">Traffic by {granularity}</h2>
           <p className="text-xs text-muted-foreground">
-            Change column compares {METRIC_LABELS[metric].toLowerCase()} with
-            the pre-launch average.
+            {hasBaseline
+              ? `Change column compares ${METRIC_LABELS[metric].toLowerCase()} with the pre-launch average.`
+              : metric === "key_events"
+                ? KEY_EVENTS_NOT_COMPARABLE
+                : "No complete pre-launch period to compare with."}
           </p>
         </div>
         <Button

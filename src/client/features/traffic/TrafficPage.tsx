@@ -10,11 +10,17 @@ import { TrafficControls } from "./TrafficControls";
 import { TrafficKpiCards } from "./TrafficKpiCards";
 import { TrafficTable } from "./TrafficTable";
 import { buildTableRows } from "./trafficCsv";
-import { CHANNEL_LABELS, formatDay, RANGE_LABELS } from "./trafficFormat";
+import {
+  CHANNEL_LABELS,
+  formatDay,
+  KEY_EVENTS_NOT_COMPARABLE,
+  RANGE_LABELS,
+} from "./trafficFormat";
 import {
   baselineForGranularity,
   baselineAverage,
   fillDays,
+  isComparableAcrossLaunch,
   launchBucketKey,
   metricField,
   postLaunchAverage,
@@ -58,12 +64,10 @@ export function TrafficPage({
       coverage,
       selected,
     );
-    const baselineBucket = baselineForGranularity(
-      days,
-      granularity,
-      coverage,
-      launch,
-    );
+    // Key events are not like-for-like across launch: no baseline for them.
+    const baselineBucket = isComparableAcrossLaunch(metric)
+      ? baselineForGranularity(days, granularity, coverage, launch)
+      : null;
     const field = metricField(metric);
     const post = postLaunchAverage(days, "week", coverage, launch);
     return {
@@ -154,6 +158,11 @@ export function TrafficPage({
                   view.baselineBucket
                     ? view.baselineBucket.averages[metricField(metric)]
                     : null
+                }
+                baselineNote={
+                  isComparableAcrossLaunch(metric)
+                    ? undefined
+                    : KEY_EVENTS_NOT_COMPARABLE
                 }
               />
               {view.partialOmitted > 0 ? (

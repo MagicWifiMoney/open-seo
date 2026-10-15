@@ -98,3 +98,7 @@ export function formatBucketLabel(
   });
   return g === "week" ? `Wk of ${text}` : text;
 }
+
+/** Shown wherever key events would otherwise be compared across the launch. */
+export const KEY_EVENTS_NOT_COMPARABLE =
+  "Tracking changed at launch, so earlier counts are not comparable.";

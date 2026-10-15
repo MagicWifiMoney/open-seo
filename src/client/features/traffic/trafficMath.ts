@@ -233,11 +233,18 @@ export type MetricComparison = {
   delta: Delta;
 };
 
-/** Post-launch average vs a reference average, for every metric. */
+/** Key events are not like-for-like across the launch (the old site fired a
+ *  different event), so they never get a comparison. */
+export function isComparableAcrossLaunch(metric: TrafficMetric): boolean {
+  return metric !== "key_events";
+}
+
+/** Post-launch average vs a reference average. Key events are null: see
+ *  isComparableAcrossLaunch. */
 export function compareAverages(
   current: Averages,
   base: Averages,
-): Record<TrafficMetric, MetricComparison> {
+): Record<TrafficMetric, MetricComparison | null> {
   const make = (metric: TrafficMetric): MetricComparison => {
     const field = metricField(metric);
     return {
@@ -250,7 +257,7 @@ export function compareAverages(
   return {
     sessions: make("sessions"),
     users: make("users"),
-    key_events: make("key_events"),
+    key_events: null,
   };
 }
 

@@ -15,6 +15,7 @@ import {
   formatPercent,
   formatSigned,
   COMPARE_LABELS,
+  KEY_EVENTS_NOT_COMPARABLE,
   METRIC_LABELS,
 } from "./trafficFormat";
 import {
@@ -112,9 +113,11 @@ export function TrafficKpiCards({
                   </p>
                 ) : (
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {compare === "yoy"
-                      ? "No data for the same weeks last year."
-                      : "No complete pre-launch weeks."}
+                    {metric === "key_events"
+                      ? KEY_EVENTS_NOT_COMPARABLE
+                      : compare === "yoy"
+                        ? "No data for the same weeks last year."
+                        : "No complete pre-launch weeks."}
                   </p>
                 )}
                 {comparison ? (
