@@ -32,11 +32,11 @@ const isoDate = z.string().refine(isValidIsoDate);
  *  default. The range and compare params are the shared control: any tab can
  *  read the same names. */
 export const overviewSearchSchema = z.object({
-  range: z.enum(OVERVIEW_RANGES).default("last_28_days").catch("last_28_days"),
+  range: z.enum(OVERVIEW_RANGES).default("since_launch").catch("since_launch"),
   compare: z
     .enum(OVERVIEW_COMPARES)
-    .default("previous_period")
-    .catch("previous_period"),
+    .default("pre_launch_avg")
+    .catch("pre_launch_avg"),
   launch: isoDate.default(SITE_LAUNCH_DATE).catch(SITE_LAUNCH_DATE),
   // Launch marker toggle on the trend chart.
   marker: z.boolean().default(true).catch(true),
@@ -52,8 +52,8 @@ export const overviewSearchSchema = z.object({
 export type OverviewSearch = z.infer<typeof overviewSearchSchema>;
 
 export const OVERVIEW_SEARCH_DEFAULTS = {
-  range: "last_28_days",
-  compare: "previous_period",
+  range: "since_launch",
+  compare: "pre_launch_avg",
   launch: SITE_LAUNCH_DATE,
   marker: true,
   device: "desktop",
