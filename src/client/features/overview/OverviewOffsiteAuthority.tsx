@@ -6,7 +6,7 @@ import { getBacklinksOverview } from "@/serverFunctions/backlinks";
 import { getDashboardActivation } from "@/serverFunctions/dashboard";
 import { formatCheckedAt, formatOffsiteCount } from "./overviewOffsite";
 
-const SOURCE = "DataForSEO backlinks, live check";
+const SOURCE = "DataForSEO backlinks (results can be a few hours old)";
 
 export function OverviewOffsiteAuthority({ projectId }: { projectId: string }) {
   // Same query key the dashboard uses, so the project's domain is usually cached.
