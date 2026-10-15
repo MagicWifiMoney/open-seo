@@ -122,7 +122,7 @@ export async function sendHostedVerificationEmail({
     email,
     transactionalId: config.verificationTemplateId,
     dataVariables: {
-      appName: "OpenSEO",
+      appName: "Quiet Coyote",
       confirmationUrl,
     },
   });
@@ -150,7 +150,7 @@ export async function sendHostedInvitationEmail({
     email,
     transactionalId: templateId,
     dataVariables: {
-      appName: "OpenSEO",
+      appName: "Quiet Coyote",
       inviteUrl,
       organizationName,
       inviterName,
@@ -172,7 +172,7 @@ export async function sendHostedPasswordResetEmail({
     email,
     transactionalId: config.passwordResetTemplateId,
     dataVariables: {
-      appName: "OpenSEO",
+      appName: "Quiet Coyote",
       resetUrl,
     },
   });

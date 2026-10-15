@@ -19,14 +19,14 @@ export async function renderReportSocialImage(
         display: "flex",
         flexDirection: "column",
         padding: 64,
-        backgroundColor: "#f5f4ef",
-        color: "#1d2925",
+        backgroundColor: "#f7f3ed",
+        color: "#1e2925",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
         <img src={logo} width={64} height={64} style={{ borderRadius: 14 }} />
         <div style={{ fontSize: 34, fontWeight: 600, letterSpacing: -1 }}>
-          OpenSEO
+          Quiet Coyote
         </div>
       </div>
       <div

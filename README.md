@@ -1,4 +1,6 @@
-# OpenSEO
+# Quiet Coyote SEO
+
+Built on OpenSEO (MIT). Quiet Coyote's private fork of [OpenSEO](https://github.com/every-app/open-seo); the original license and copyright notice are kept in `LICENSE`. The upstream documentation below still describes the OpenSEO project.
 
 > Open source alternative to Semrush and Ahrefs
 

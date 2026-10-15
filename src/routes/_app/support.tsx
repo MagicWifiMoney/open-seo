@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { CopyButton } from "@/client/components/CopyButton";
 import { PageHeader } from "@/client/components/PageHeader";
 import {
@@ -14,6 +14,10 @@ const DISCORD_URL = "https://discord.gg/c9uGs3cFXr";
 const GITHUB_URL = "https://github.com/every-app/open-seo";
 
 export const Route = createFileRoute("/_app/support")({
+  // The upstream project's community and support page does not apply here.
+  beforeLoad: () => {
+    throw redirect({ to: "/" });
+  },
   component: SupportPage,
 });
 
@@ -27,7 +31,7 @@ function SupportPage() {
           </p>
           <PageHeader
             title="We want to hear from you"
-            description="We want to talk to you! We're super open to feedback and want to learn how you work so we can make OpenSEO better."
+            description="We want to talk to you! We're super open to feedback and want to learn how you work so we can make Quiet Coyote better."
           />
         </div>
 

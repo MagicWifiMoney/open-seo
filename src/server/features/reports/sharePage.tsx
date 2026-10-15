@@ -19,8 +19,6 @@ import { domainField } from "@/types/schemas/domain";
 // JavaScript beyond the Share button's clipboard handler. JSX so every value
 // from the row is escaped by React, not by hand.
 
-const MARKETING_URL = "https://openseo.so/?utm_source=shared_report";
-
 const MAX_DESCRIPTION_CHARS = 200;
 
 /**
@@ -44,8 +42,8 @@ function shareDescription(summary: string): string {
 // product without loading its stylesheet. Dark follows the OS: an anonymous
 // reader has no stored preference.
 const STYLES = `
-:root{color-scheme:light dark;--bg:oklch(97% 0 0);--surface:oklch(100% 0 0);--border:oklch(92% 0 0);--text:oklch(20% 0 0);--muted:oklch(20% 0 0 / .5);--primary:oklch(50% 0.12 262);--primary-text:oklch(100% 0 0);--ghost-hover:oklch(20% 0 0 / .08)}
-@media (prefers-color-scheme:dark){:root{--bg:oklch(12% 0 0);--surface:oklch(18% 0 0);--border:oklch(27% 0 0);--text:oklch(92% 0 0);--muted:oklch(92% 0 0 / .5);--primary:oklch(66% 0.12 262);--ghost-hover:oklch(92% 0 0 / .1)}}
+:root{color-scheme:light dark;--bg:#f7f3ed;--surface:#fffdf9;--border:#ddd5c8;--text:#1e2925;--muted:#58635d;--primary:#24302b;--primary-text:#f7f3ed;--ghost-hover:#1e29251a}
+@media (prefers-color-scheme:dark){:root{--bg:#09110f;--surface:#111b18;--border:#26332e;--text:#f7f3ed;--muted:#a3b0a9;--primary:#b8c9b5;--primary-text:#09110f;--ghost-hover:#f7f3ed1a}}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
@@ -80,19 +78,6 @@ document.getElementById("share").addEventListener("click",async function(){
   setTimeout(function(){label.textContent="Share"},2000);
 });`;
 
-function TryButton() {
-  return (
-    <a
-      className="btn primary"
-      href={MARKETING_URL}
-      target="_blank"
-      rel="noreferrer"
-    >
-      Try OpenSEO
-    </a>
-  );
-}
-
 function Document({
   title,
   head,
@@ -111,7 +96,7 @@ function Document({
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
         <meta name="robots" content="noindex, nofollow" />
-        <title>{`${title} · OpenSEO`}</title>
+        <title>{`${title} · Quiet Coyote`}</title>
         {head}
         <link rel="icon" href="/favicon.ico" />
         <style dangerouslySetInnerHTML={{ __html: STYLES }} />
@@ -144,7 +129,6 @@ function unavailable(heading: string, detail: string): Response {
       <main>
         <h1>{heading}</h1>
         <p>{detail}</p>
-        <TryButton />
       </main>
     </Document>,
     404,
@@ -195,7 +179,7 @@ export async function renderSharePage(
       head={
         <>
           <meta property="og:type" content="article" />
-          <meta property="og:site_name" content="OpenSEO" />
+          <meta property="og:site_name" content="Quiet Coyote" />
           <meta property="og:title" content={report.title} />
           <meta name="twitter:title" content={report.title} />
           {description ? (
@@ -208,11 +192,14 @@ export async function renderSharePage(
           <meta property="og:image" content={imageUrl} />
           <meta property="og:image:width" content="1200" />
           <meta property="og:image:height" content="630" />
-          <meta property="og:image:alt" content={`${report.title} · OpenSEO`} />
+          <meta
+            property="og:image:alt"
+            content={`${report.title} · Quiet Coyote`}
+          />
           <meta name="twitter:image" content={imageUrl} />
           <meta
             name="twitter:image:alt"
-            content={`${report.title} · OpenSEO`}
+            content={`${report.title} · Quiet Coyote`}
           />
           <meta name="twitter:card" content="summary_large_image" />
         </>
@@ -222,7 +209,8 @@ export async function renderSharePage(
         <div className="title">
           <h1>{report.title}</h1>
           <p className="meta">
-            Made with OpenSEO · Updated {formatRelativeTime(report.updatedAt)}
+            Made with Quiet Coyote · Updated{" "}
+            {formatRelativeTime(report.updatedAt)}
           </p>
         </div>
         <div className="actions">
@@ -244,7 +232,6 @@ export async function renderSharePage(
             </svg>
             <span>Share</span>
           </button>
-          <TryButton />
         </div>
       </header>
       <iframe

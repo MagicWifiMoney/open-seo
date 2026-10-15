@@ -214,6 +214,6 @@ function agentFacingError(error: unknown, appError: AppError | null): unknown {
     appError.message === appError.code ? "" : `${appError.message} `;
   return new AppError(
     "INSUFFICIENT_CREDITS",
-    `${detail}This OpenSEO organization doesn't have enough credits for this request. Retrying won't help until the organization has more credits.`,
+    `${detail}This Quiet Coyote organization doesn't have enough credits for this request. Retrying won't help until the organization has more credits.`,
   );
 }

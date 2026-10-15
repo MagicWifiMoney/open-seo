@@ -17,6 +17,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/client/components/ui/sidebar";
+import { BrandMark } from "@/client/components/BrandMark";
 
 export function AuthenticatedAppLayout({
   children,
@@ -141,8 +142,12 @@ function MobileTopBar() {
   return (
     <div className="flex shrink-0 items-center gap-1 border-b border-border bg-card px-2 py-1.5 md:hidden">
       <SidebarTrigger aria-label="Toggle sidebar" />
-      <Link to="/" className="ml-1 font-semibold text-foreground">
-        OpenSEO
+      <Link
+        to="/"
+        className="ml-1 flex items-center gap-2 font-serif font-semibold text-foreground"
+      >
+        <BrandMark className="size-6" />
+        Quiet Coyote
       </Link>
     </div>
   );

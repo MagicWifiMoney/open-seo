@@ -36,7 +36,6 @@ import {
   HttpStatusBadge,
   StatusBadge,
 } from "@/client/features/audit/shared";
-import { SUPPORT_EMAIL } from "@/client/lib/support";
 
 export function AuditDetail({
   projectId,
@@ -149,9 +148,8 @@ export function AuditDetail({
             </AlertTitle>
             <AlertDescription>
               <p>
-                Run a new audit to try again, or email{" "}
-                <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> if this
-                keeps happening.
+                Run a new audit to try again. If this keeps happening, check the
+                crawler access settings for the site.
               </p>
               {status.errorCode ? (
                 <p className="font-mono text-xs">Code: {status.errorCode}</p>
@@ -184,9 +182,8 @@ export function AuditDetail({
             </AlertTitle>
             <AlertDescription>
               The results below cover everything crawled before it stopped. Run
-              a new audit to try again, or email{" "}
-              <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> if this
-              keeps happening.
+              a new audit to try again. If this keeps happening, check the
+              crawler access settings for the site.
             </AlertDescription>
           </Alert>
         )}

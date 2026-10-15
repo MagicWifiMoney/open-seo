@@ -43,7 +43,7 @@ function AuthErrorPage() {
           variant="secondary"
           className="w-full"
         >
-          Back to OpenSEO
+          Back to Quiet Coyote
         </Button>
       </AuthPageCard>
     </AuthPageShell>

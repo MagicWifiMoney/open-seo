@@ -103,10 +103,10 @@ function YcPlanPage() {
       <div className="text-center space-y-3">
         <img
           src="/transparent-logo.png"
-          alt="OpenSEO"
+          alt="Quiet Coyote"
           className="mx-auto size-10 rounded-lg"
         />
-        <h1 className="text-xl font-semibold">OpenSEO for YC founders</h1>
+        <h1 className="text-xl font-semibold">Quiet Coyote for YC founders</h1>
         <p className="text-sm text-muted-foreground">
           A bigger monthly credit pool for teams doing serious SEO work, with
           your first month free through the YC deal.

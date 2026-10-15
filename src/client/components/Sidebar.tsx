@@ -3,15 +3,7 @@ import type { LinkOptions } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ComponentType } from "react";
 import { toast } from "sonner";
-import {
-  ArrowLeftRight,
-  Check,
-  CircleHelp,
-  CreditCard,
-  LogOut,
-  Settings,
-  User,
-} from "lucide-react";
+import { ArrowLeftRight, Check, LogOut, Settings, User } from "lucide-react";
 import { organizationContextQueryOptions } from "@/client/features/team/organizationQueries";
 import { switchOrganization } from "@/serverFunctions/organization";
 import { clearLastProjectId } from "@/client/lib/active-project";
@@ -27,7 +19,6 @@ import {
 import { ThemePreferenceRadio } from "@/client/components/ThemePreferenceMenuItems";
 import { getStandardErrorMessage } from "@/client/lib/error-messages";
 import { signOutAndRedirect, useSession } from "@/lib/auth-client";
-import { BILLING_ROUTE } from "@/shared/billing";
 import {
   Sidebar as UiSidebar,
   SidebarContent,
@@ -51,6 +42,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/client/components/ui/dropdown-menu";
+import { BrandMark } from "@/client/components/BrandMark";
 
 const navButtonClass =
   "relative text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:before:absolute data-active:before:inset-y-1 data-active:before:left-0 data-active:before:w-[3px] data-active:before:rounded-r-full data-active:before:bg-primary";
@@ -143,9 +135,10 @@ export function Sidebar({
         <Link
           to="/"
           onClick={() => setOpenMobile(false)}
-          className="px-1 pb-2 text-base font-semibold text-sidebar-foreground"
+          className="flex items-center gap-2 px-1 pb-2 font-serif text-lg font-semibold text-sidebar-foreground"
         >
-          OpenSEO
+          <BrandMark className="size-7" />
+          Quiet Coyote
         </Link>
         <ProjectSwitcher
           activeProjectId={projectId}
@@ -232,11 +225,6 @@ function AccountFooter({ ready }: { ready: boolean }) {
   return (
     <UiSidebarFooter className="gap-0 border-t border-sidebar-border pb-safe">
       <SidebarMenu>
-        <SidebarNavLink
-          icon={CircleHelp}
-          label="Help & Community"
-          linkProps={{ to: "/support" }}
-        />
         {email ? (
           <SidebarMenuItem>
             <DropdownMenu>
@@ -291,17 +279,6 @@ function AccountFooter({ ready }: { ready: boolean }) {
                 >
                   <Settings className="size-4" />
                   Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  render={
-                    <Link
-                      to={BILLING_ROUTE}
-                      onClick={() => setOpenMobile(false)}
-                    />
-                  }
-                >
-                  <CreditCard className="size-4" />
-                  Billing
                 </DropdownMenuItem>
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Theme</DropdownMenuLabel>

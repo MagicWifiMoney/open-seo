@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { QueryError } from "@/client/components/QueryState";
@@ -22,6 +22,7 @@ import { captureClientEvent } from "@/client/lib/posthog";
 import { useSession } from "@/lib/auth-client";
 import { getStandardErrorMessage } from "@/client/lib/error-messages";
 import { getSubscribeRouteState } from "@/client/features/billing/route-state";
+import { isHostedClientAuthMode } from "@/lib/auth-mode";
 import { normalizeAuthRedirect } from "@/lib/auth-redirect";
 import { useCanManageBilling } from "@/client/features/team/organizationQueries";
 import { SUPPORT_EMAIL } from "@/client/lib/support";
@@ -43,6 +44,12 @@ export const Route = createFileRoute("/_authenticated/subscribe")({
   // The loader fills the module-scoped query client, so keep it out of server
   // requests: one worker isolate must not cache another account's billing.
   ssr: false,
+  // Self-hosted Quiet Coyote has no plans to subscribe to.
+  beforeLoad: () => {
+    if (!isHostedClientAuthMode()) {
+      throw notFound();
+    }
+  },
   validateSearch: (
     search: Record<string, unknown>,
   ): { upgrade?: true; redirect?: string; checkout?: "success" } => ({
@@ -202,15 +209,15 @@ function SubscribePage() {
       <div className="space-y-3 text-center">
         <img
           src="/transparent-logo.png"
-          alt="OpenSEO"
+          alt="Quiet Coyote"
           className="mx-auto size-10 rounded-lg"
         />
         <h1 className="text-xl font-semibold">
           {isUpgradeFlow
             ? "Upgrade your plan"
             : firstName
-              ? `Welcome to OpenSEO, ${firstName}!`
-              : "Welcome to OpenSEO!"}
+              ? `Welcome to Quiet Coyote, ${firstName}!`
+              : "Welcome to Quiet Coyote!"}
         </h1>
         <p className="text-sm text-muted-foreground">
           SEO on your terms. All your SEO tools in one place at a fair price.

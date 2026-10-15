@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "cn";
 import { Spinner } from "@/client/components/Spinner";
+import { BrandMark } from "@/client/components/BrandMark";
 
 const WIDTHS = {
   sm: "max-w-xs",
@@ -44,13 +45,7 @@ export function StatusScreen({
           WIDTHS[size],
         )}
       >
-        {logo ? (
-          <img
-            src="/transparent-logo.png"
-            alt="OpenSEO"
-            className="size-10 rounded-lg"
-          />
-        ) : null}
+        {logo ? <BrandMark alt="Quiet Coyote" className="size-12" /> : null}
         {title ? (
           <h1 className="text-center text-xl font-semibold">{title}</h1>
         ) : null}
