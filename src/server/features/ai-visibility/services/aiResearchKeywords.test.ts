@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   listCompetitors,
   listResearchKeywords,
+  getConfiguration,
   research,
   workflow,
   prepareWebsiteTracking,
@@ -10,6 +11,7 @@ const {
 } = vi.hoisted(() => ({
   listCompetitors: vi.fn(),
   listResearchKeywords: vi.fn(),
+  getConfiguration: vi.fn(),
   research: vi.fn(),
   workflow: { get: vi.fn(), create: vi.fn() },
   prepareWebsiteTracking: vi.fn(),
@@ -58,7 +60,7 @@ vi.mock(
   }),
 );
 vi.mock("../repositories/AiVisibilityRepository", () => ({
-  AiVisibilityRepository: { listResearchKeywords },
+  AiVisibilityRepository: { listResearchKeywords, getConfiguration },
 }));
 vi.mock("@/server/features/projects/services/websiteResearch", () => ({
   researchWebsite: research,
@@ -127,6 +129,52 @@ describe("runAiResearchSetup", () => {
 });
 
 describe("getAiResearchSetup", () => {
+  beforeEach(() => {
+    getConfiguration.mockResolvedValue(null);
+    workflow.get.mockReset();
+  });
+
+  it("is ready for a tracker with prompts and no research keywords", async () => {
+    listResearchKeywords.mockResolvedValue([]);
+    listCompetitors.mockResolvedValue([]);
+    getConfiguration.mockResolvedValue({
+      tracker: { id: "t" },
+      prompts: [{ archived: true }, { archived: false }],
+    });
+
+    await expect(getAiResearchSetup("project")).resolves.toMatchObject({
+      status: "ready",
+      keywords: [],
+    });
+    expect(workflow.get).not.toHaveBeenCalled();
+  });
+
+  it("reads the setup run when the tracker has only archived prompts", async () => {
+    listResearchKeywords.mockResolvedValue([]);
+    listCompetitors.mockResolvedValue([]);
+    getConfiguration.mockResolvedValue({
+      tracker: { id: "t" },
+      prompts: [{ archived: true }],
+    });
+    workflow.get.mockRejectedValue(new Error("not found"));
+
+    await expect(getAiResearchSetup("project")).resolves.toMatchObject({
+      status: "none",
+    });
+  });
+
+  it("reads the setup run when there is no tracker and no keywords", async () => {
+    listResearchKeywords.mockResolvedValue([]);
+    listCompetitors.mockResolvedValue([]);
+    workflow.get.mockResolvedValue({
+      status: async () => ({ status: "running" }),
+    });
+
+    await expect(getAiResearchSetup("project")).resolves.toMatchObject({
+      status: "running",
+    });
+  });
+
   it.each([
     [
       "AppError: We couldn't read this website. Check the URL and try again.",

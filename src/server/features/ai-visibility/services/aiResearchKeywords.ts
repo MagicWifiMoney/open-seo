@@ -87,9 +87,17 @@ export async function getAiResearchSetup(projectId: string) {
     ProjectContextRepository.listSections(projectId),
     ProjectContextRepository.listCompetitors(projectId),
   ]);
-  const run = keywords.length
-    ? { status: "ready" as const }
-    : await readSetupRun(projectId);
+  // A tracker with live prompts (for example one created through MCP) needs
+  // no research keywords, so setup counts as done without them.
+  const hasPrompts =
+    !keywords.length &&
+    !!(await repo.getConfiguration(projectId))?.prompts.some(
+      (prompt) => !prompt.archived,
+    );
+  const run =
+    keywords.length || hasPrompts
+      ? { status: "ready" as const }
+      : await readSetupRun(projectId);
   return {
     keywords,
     ...missingContext(sections, competitors),
