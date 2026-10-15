@@ -1,3 +1,4 @@
+import { DataforseoSpendCard } from "@/client/features/rank-tracking/DataforseoSpendCard";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, Play, Plus, Settings2 } from "lucide-react";
@@ -41,6 +42,7 @@ import {
 import type { ProjectMarket } from "@/client/features/projects/types";
 import { DEFAULT_LOCATION_CODE } from "@/shared/keyword-locations";
 import { scheduleLabel } from "@/shared/rank-tracking";
+import { InsufficientCreditsError } from "@/client/features/billing/InsufficientCreditsError";
 
 export function PromptTrackingPage({
   projectId,
@@ -172,6 +174,7 @@ function PromptTrackingContent({
         title="Prompt Tracking"
         description="Track the prompts your customers use with AI. Inspect where your business is mentioned or cited."
       />
+      <DataforseoSpendCard projectId={projectId} />
       {!state.configured ? (
         <EmptyState
           variant="card"
@@ -228,10 +231,14 @@ function PromptTrackingContent({
                 </div>
               </div>
               <RunStatusLine run={progress.run} tracker={tracker} />
-              {tracker?.lastSkipReason && (
-                <p className="text-xs text-warning">
-                  Most recent scheduling notice: {tracker.lastSkipReason}
-                </p>
+              {tracker?.lastSkipReason === "INSUFFICIENT_CREDITS" ? (
+                <InsufficientCreditsError variant="inline" />
+              ) : (
+                tracker?.lastSkipReason && (
+                  <p className="text-xs text-warning">
+                    Most recent scheduling notice: {tracker.lastSkipReason}
+                  </p>
+                )
               )}
             </div>
             <VisibilityTrend projectId={projectId} collecting={busy} />

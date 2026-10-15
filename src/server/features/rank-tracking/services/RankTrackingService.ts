@@ -22,11 +22,10 @@ import {
 } from "./rankCheckRunGuards";
 import {
   estimateRankCheckCredits,
-  computeNextCheckAt,
-  isScheduledRankTrackingInterval,
   MAX_CONFIGS_PER_PROJECT,
   rankCheckCostApprovalError,
 } from "@/shared/rank-tracking";
+import { resolveNextCheckAt } from "./configSchedule";
 import {
   getIsoCountryCode,
   resolveKeywordDataLanguage,
@@ -49,6 +48,7 @@ async function createConfig(input: {
   locationName?: string;
   devices?: RankTrackingConfig["devices"];
   serpDepth: number;
+  trackCompetitors?: boolean;
   scheduleInterval?: RankTrackingConfig["scheduleInterval"];
   scheduleTime?: RankCheckScheduleTime;
 }) {
@@ -59,7 +59,10 @@ async function createConfig(input: {
     input.projectMarket,
   );
   const scheduleInterval = input.scheduleInterval ?? "weekly";
-  const nextCheckAt = resolveNextCheckAt(scheduleInterval, input.scheduleTime);
+  const nextCheckAt = await resolveNextCheckAt(
+    scheduleInterval,
+    input.scheduleTime,
+  );
 
   const locationName = input.locationName ?? null;
   // Before the duplicate/limit checks so an unusable location name is the
@@ -111,6 +114,9 @@ async function createConfig(input: {
       languageCode,
       devices: input.devices ?? "both",
       serpDepth: input.serpDepth,
+      ...(input.trackCompetitors !== undefined && {
+        trackCompetitors: input.trackCompetitors,
+      }),
       scheduleInterval,
       nextCheckAt,
       // Drop any stale skip reason from before it was archived so the
@@ -131,6 +137,7 @@ async function createConfig(input: {
     locationName,
     devices: input.devices ?? "both",
     serpDepth: input.serpDepth,
+    trackCompetitors: input.trackCompetitors ?? false,
     scheduleInterval,
     nextCheckAt,
     isActive: true,
@@ -154,6 +161,7 @@ async function updateConfig(
     locationName?: string | null;
     devices?: RankTrackingConfig["devices"];
     serpDepth?: number;
+    trackCompetitors?: boolean;
     scheduleInterval?: RankTrackingConfig["scheduleInterval"];
     scheduleTime?: RankCheckScheduleTime;
     isActive?: boolean;
@@ -195,6 +203,8 @@ async function updateConfig(
     updates.locationName = input.locationName;
   if (input.devices !== undefined) updates.devices = input.devices;
   if (input.serpDepth !== undefined) updates.serpDepth = input.serpDepth;
+  if (input.trackCompetitors !== undefined)
+    updates.trackCompetitors = input.trackCompetitors;
   if (input.isActive !== undefined) updates.isActive = input.isActive;
 
   const scheduleInterval = input.scheduleInterval ?? existing.scheduleInterval;
@@ -207,37 +217,13 @@ async function updateConfig(
     (scheduleInterval !== "manual" && !existing.nextCheckAt)
   ) {
     updates.scheduleInterval = scheduleInterval;
-    updates.nextCheckAt = resolveNextCheckAt(scheduleInterval, scheduleTime);
+    updates.nextCheckAt = await resolveNextCheckAt(
+      scheduleInterval,
+      scheduleTime,
+    );
   }
 
   await RankTrackingRepository.updateConfig(configId, projectId, updates);
-}
-
-function resolveNextCheckAt(
-  scheduleInterval: RankTrackingConfig["scheduleInterval"],
-  scheduleTime: RankCheckScheduleTime | undefined,
-): string | null {
-  if (isScheduledRankTrackingInterval(scheduleInterval)) {
-    // Without one the check would quietly repeat on whatever day today is.
-    if (
-      scheduleInterval === "weekly" &&
-      scheduleTime &&
-      scheduleTime.weekday === undefined
-    ) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        "A weekly schedule time needs a weekday",
-      );
-    }
-    return computeNextCheckAt(scheduleInterval, null, scheduleTime);
-  }
-  if (scheduleTime) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "A schedule time needs a daily, weekly, or monthly schedule",
-    );
-  }
-  return null;
 }
 
 // ---------------------------------------------------------------------------

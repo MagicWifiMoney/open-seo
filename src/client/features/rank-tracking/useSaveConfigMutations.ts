@@ -14,6 +14,7 @@ export type SaveConfigInput = {
   domain: string;
   devices: "both" | "desktop" | "mobile";
   serpDepth: number;
+  trackCompetitors: boolean;
   locationCode: number;
   languageCode: string;
   targetingMode: "national" | "local";
@@ -27,6 +28,7 @@ function commonFields(input: SaveConfigInput) {
     domain: input.domain,
     devices: input.devices,
     serpDepth: input.serpDepth,
+    trackCompetitors: input.trackCompetitors,
     locationCode: input.locationCode,
     languageCode: input.languageCode,
     scheduleInterval: input.schedule,

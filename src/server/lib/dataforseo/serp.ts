@@ -13,6 +13,7 @@ import {
   type DataforseoApiResponse,
   type DataforseoItemsTask,
   type DataforseoTaskLike,
+  failedResponseError,
 } from "@/server/lib/dataforseo/envelope";
 import { AppError } from "@/server/lib/errors";
 
@@ -38,7 +39,13 @@ export function clampSerpDepth(depth: number): number {
  * find_targets_in, a sitelink or PAA mention could stop the crawl before the
  * domain's organic listing and record a false "not ranking".
  */
-function stopCrawlOnTarget(targetDomain: string) {
+function stopCrawlOnTarget(
+  targetDomain: string,
+  competitorDomains?: readonly string[],
+) {
+  // Competitor positions come from the same SERP, so an early stop at the
+  // target would truncate it and record false "not seen" results.
+  if (competitorDomains && competitorDomains.length > 0) return {};
   return {
     stop_crawl_on_match: [
       { match_value: targetDomain, match_type: "with_subdomains" },
@@ -93,7 +100,9 @@ export async function fetchLiveSerp(input: {
   depth?: number;
   /** Canonical DataForSEO name of a city, county, or region for a local SERP. */
   locationName?: string;
+  device?: "desktop" | "mobile";
 }): Promise<DataforseoApiResponse<SerpLiveItem[]>> {
+  const device = input.device ?? "desktop";
   const locationParams = input.locationName
     ? { location_name: input.locationName }
     : { location_code: input.locationCode };
@@ -104,8 +113,8 @@ export async function fetchLiveSerp(input: {
         keyword: input.keyword,
         ...locationParams,
         language_code: input.languageCode,
-        device: "desktop",
-        os: "windows",
+        device,
+        os: device === "desktop" ? "windows" : "android",
         depth: clampSerpDepth(input.depth ?? SERP_ANALYSIS_DEPTH),
       },
     ],
@@ -129,17 +138,44 @@ export interface RankCheckResult {
   position: number | null;
   url: string | null;
   serpFeatures: string[];
+  /** Present only when competitorDomains were requested. */
+  competitors?: RankCheckCompetitorResult[];
 }
 
-function buildRankCheckResult(
-  input: { keywordId: string; keyword: string; targetDomain: string },
-  items: SerpLiveItem[],
-): RankCheckResult {
-  const target = input.targetDomain.toLowerCase();
-  const organicMatch = items.find((item) => {
+export interface RankCheckCompetitorResult {
+  domain: string;
+  position: number | null;
+  url: string | null;
+}
+
+function findOrganicMatch(items: SerpLiveItem[], targetDomain: string) {
+  const target = targetDomain.toLowerCase();
+  return items.find((item) => {
     if (item.type !== "organic" || item.domain == null) return false;
     const domain = item.domain.toLowerCase();
     return domain === target || domain.endsWith(`.${target}`);
+  });
+}
+
+function buildRankCheckResult(
+  input: {
+    keywordId: string;
+    keyword: string;
+    targetDomain: string;
+    competitorDomains?: string[];
+  },
+  items: SerpLiveItem[],
+): RankCheckResult {
+  const organicMatch = findOrganicMatch(items, input.targetDomain);
+  const competitors = input.competitorDomains?.map((domain) => {
+    const match = findOrganicMatch(items, domain);
+    return {
+      domain,
+      position: match
+        ? (match.rank_group ?? match.rank_absolute ?? null)
+        : null,
+      url: match?.url ?? null,
+    };
   });
 
   return {
@@ -153,6 +189,7 @@ function buildRankCheckResult(
       : null,
     url: organicMatch?.url ?? null,
     serpFeatures: [...new Set(items.map((item) => item.type).filter(Boolean))],
+    ...(competitors ? { competitors } : {}),
   };
 }
 
@@ -164,6 +201,7 @@ export async function fetchRankCheckSerp(input: {
   locationName?: string;
   device: "desktop" | "mobile";
   targetDomain: string;
+  competitorDomains?: string[];
   depth: number;
 }): Promise<DataforseoApiResponse<RankCheckResult>> {
   const depth = clampSerpDepth(input.depth);
@@ -180,7 +218,7 @@ export async function fetchRankCheckSerp(input: {
         device: input.device,
         os: input.device === "desktop" ? "windows" : "android",
         depth,
-        ...stopCrawlOnTarget(input.targetDomain),
+        ...stopCrawlOnTarget(input.targetDomain, input.competitorDomains),
       },
     ],
   );
@@ -224,6 +262,7 @@ export async function postRankCheckTasks(input: {
   locationName?: string;
   depth: number;
   targetDomain: string;
+  competitorDomains?: string[];
 }): Promise<DataforseoApiResponse<PostedRankCheckTask[]>> {
   if (input.tasks.length === 0 || input.tasks.length > MAX_TASKS_PER_POST) {
     throw new AppError(
@@ -250,7 +289,7 @@ export async function postRankCheckTasks(input: {
       // task_get later reports the reduced actual cost when the crawl
       // stopped early. We meter customers on the post-time amount —
       // collection-time metering is a possible future optimization.
-      ...stopCrawlOnTarget(input.targetDomain),
+      ...stopCrawlOnTarget(input.targetDomain, input.competitorDomains),
       // Echoed back on the response entry and task_get; used to map a
       // DataForSEO task id back to our keyword without relying on order.
       tag: `${task.keywordId}:${task.device}`,
@@ -258,10 +297,7 @@ export async function postRankCheckTasks(input: {
   );
 
   if (!response || response.status_code !== 20000) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      response?.status_message || "DataForSEO task_post failed",
-    );
+    throw failedResponseError(response, "DataForSEO task_post failed");
   }
 
   // One response entry per submitted task; accepted entries have status 20100
@@ -313,16 +349,14 @@ export async function fetchRankCheckTaskResult(input: {
   keywordId: string;
   keyword: string;
   targetDomain: string;
+  competitorDomains?: string[];
 }): Promise<RankCheckTaskOutcome> {
   const response = await dataforseoGet(
     `/v3/serp/google/organic/task_get/advanced/${encodeURIComponent(input.taskId)}`,
   );
   const task = response?.tasks?.[0];
   if (!response || response.status_code !== 20000 || !task) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      response?.status_message || "DataForSEO task_get failed",
-    );
+    throw failedResponseError(response, "DataForSEO task_get failed");
   }
 
   if (isTaskInProgress(task)) {
@@ -448,10 +482,7 @@ export async function postLocalSerpTasks(input: {
     { maxServerErrorRetries: 0 },
   );
   if (!response || response.status_code !== 20000) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      response?.status_message || "DataForSEO task_post failed",
-    );
+    throw failedResponseError(response, "DataForSEO task_post failed");
   }
 
   // Cost is summed over every entry, accepted or not, so anything DataForSEO
@@ -506,10 +537,7 @@ export async function fetchLocalSerpTaskResult(
   >(`/v3/serp/google/maps/task_get/advanced/${encodeURIComponent(taskId)}`);
   const task = response?.tasks?.[0];
   if (!response || response.status_code !== 20000 || !task) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      response?.status_message || "DataForSEO task_get failed",
-    );
+    throw failedResponseError(response, "DataForSEO task_get failed");
   }
 
   if (isTaskInProgress(task)) return { status: "pending" };

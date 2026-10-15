@@ -3,6 +3,7 @@ import { waitUntil } from "cloudflare:workers";
 import { RankTrackingRepository } from "@/server/features/rank-tracking/repositories/RankTrackingRepository";
 import { RankTrackingService } from "@/server/features/rank-tracking/services/RankTrackingService";
 import { RankTrackingKeywordService } from "@/server/features/rank-tracking/services/RankTrackingKeywordService";
+import { getCompetitorMatrix } from "@/server/features/rank-tracking/services/rankTrackingCompetitors";
 import { getLatestResults } from "@/server/features/rank-tracking/services/rankTrackingResults";
 import { AppError, asAppError } from "@/server/lib/errors";
 import { captureServerEvent } from "@/server/lib/posthog";
@@ -22,6 +23,7 @@ import {
   getKeywordHistorySchema,
   getConfigTrendSchema,
   getPositionMatrixSchema,
+  getCompetitorMatrixSchema,
 } from "@/types/schemas/rank-tracking";
 
 export interface RankKeywordHistoryPoint {
@@ -37,6 +39,7 @@ interface RankConfigTrendPoint {
   top4to10: number;
   top11to20: number;
   notRanking: number;
+  notChecked: number;
 }
 
 export interface RankPositionMatrixCell {
@@ -45,6 +48,8 @@ export interface RankPositionMatrixCell {
   trackingKeywordId: string;
   position: number | null;
 }
+
+export type { RankCompetitorMatrix } from "@/server/features/rank-tracking/services/rankTrackingCompetitors";
 
 async function requireConfig(configId: string, projectId: string) {
   const config = await RankTrackingRepository.getConfigById({
@@ -84,6 +89,7 @@ export const createRankTrackingConfig = createServerFn({ method: "POST" })
       locationName: data.locationName,
       devices: data.devices,
       serpDepth: data.serpDepth,
+      trackCompetitors: data.trackCompetitors,
       scheduleInterval: data.scheduleInterval,
       scheduleTime: data.scheduleTime,
     });
@@ -124,6 +130,7 @@ export const updateRankTrackingConfig = createServerFn({ method: "POST" })
       locationName: data.locationName,
       devices: data.devices,
       serpDepth: data.serpDepth,
+      trackCompetitors: data.trackCompetitors,
       scheduleInterval: data.scheduleInterval,
       scheduleTime: data.scheduleTime,
       isActive: data.isActive,
@@ -326,7 +333,9 @@ export const getRankConfigTrend = createServerFn({ method: "POST" })
       data.sinceDays,
     );
     // SQLite sum()/count() can return strings; coerce and derive "not ranking"
-    // (position > 20 or null) as the remainder so the buckets cover every kw.
+    // (position > 20 or null) as the remainder of the checked keywords, and
+    // "not checked" (the check failed, so no row) as the remainder of the
+    // run's keywords, so the buckets cover every tracked keyword.
     return rows.map((row) => {
       const top3 = Number(row.top3) || 0;
       const top4to10 = Number(row.top4to10) || 0;
@@ -339,6 +348,7 @@ export const getRankConfigTrend = createServerFn({ method: "POST" })
         top4to10,
         top11to20,
         notRanking: Math.max(0, total - top3 - top4to10 - top11to20),
+        notChecked: Math.max(0, row.keywordsTotal - total),
       };
     });
   });
@@ -353,4 +363,16 @@ export const getRankPositionMatrix = createServerFn({ method: "POST" })
       data.device,
       data.runLimit,
     );
+  });
+
+export const getRankCompetitorMatrix = createServerFn({ method: "POST" })
+  .middleware(requireProjectContext)
+  .validator(getCompetitorMatrixSchema)
+  .handler(async ({ data, context }) => {
+    await requireConfig(data.configId, context.projectId);
+    return getCompetitorMatrix({
+      configId: data.configId,
+      projectId: context.projectId,
+      device: data.device,
+    });
   });

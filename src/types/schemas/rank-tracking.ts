@@ -75,6 +75,7 @@ export const createConfigSchema = z.object({
   locationName: z.string().min(1).max(200).optional(),
   devices: devicesEnum.optional(),
   serpDepth: z.number().int().min(10).max(100).multipleOf(10),
+  trackCompetitors: z.boolean().optional(),
   scheduleInterval: scheduleEnum.optional(),
   scheduleTime: scheduleTimeSchema.optional(),
 });
@@ -88,6 +89,7 @@ export const updateConfigSchema = z.object({
   locationName: z.string().min(1).max(200).nullable().optional(),
   devices: devicesEnum.optional(),
   serpDepth: z.number().int().min(10).max(100).multipleOf(10).optional(),
+  trackCompetitors: z.boolean().optional(),
   scheduleInterval: scheduleEnum.optional(),
   scheduleTime: scheduleTimeSchema.optional(),
   isActive: z.boolean().optional(),
@@ -165,4 +167,10 @@ export const getPositionMatrixSchema = z.object({
   configId: z.string().uuid(),
   device: deviceEnum,
   runLimit: z.number().int().positive().max(26).default(12),
+});
+
+export const getCompetitorMatrixSchema = z.object({
+  projectId: z.string().uuid(),
+  configId: z.string().uuid(),
+  device: deviceEnum,
 });

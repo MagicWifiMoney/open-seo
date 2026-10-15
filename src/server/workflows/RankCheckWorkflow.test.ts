@@ -4,6 +4,7 @@ import { RankCheckWorkflow } from "./RankCheckWorkflow";
 
 const mocks = vi.hoisted(() => ({
   getConfigById: vi.fn(),
+  listCompetitors: vi.fn(),
   getRunById: vi.fn(),
   getKeywordsForConfig: vi.fn(),
   updateRun: vi.fn(),
@@ -27,6 +28,10 @@ vi.mock("@/db", () => ({ withPgClient: (fn: () => unknown) => fn() }));
 vi.mock(
   "@/server/features/rank-tracking/repositories/RankTrackingRepository",
   () => ({ RankTrackingRepository: mocks }),
+);
+vi.mock(
+  "@/server/features/ai-visibility/repositories/AiVisibilityRepository",
+  () => ({ AiVisibilityRepository: mocks }),
 );
 vi.mock("@/server/features/rank-tracking/services/rankCheckRunGuards", () => ({
   failRunIfActive: mocks.failRunIfActive,
@@ -76,7 +81,7 @@ const payload = {
   domain: "example.com",
   locationCode: 2840,
   languageCode: "en",
-  devices: "desktop" as const,
+  devices: "desktop" as "desktop" | "mobile" | "both",
   serpDepth: 10,
   trigger: "manual" as const,
 };
@@ -147,6 +152,52 @@ describe("rank check workflow credit ceiling", () => {
   });
 });
 
+describe("rank check competitor tracking", () => {
+  beforeEach(() => {
+    mocks.getRunById.mockResolvedValue(activeRun);
+    mocks.getKeywordsForConfig.mockResolvedValue(keywords(2));
+    mocks.getSnapshotsForRun.mockResolvedValue([]);
+    mocks.updateRun.mockResolvedValue(undefined);
+    mocks.isHostedServerAuthMode.mockResolvedValue(false);
+    mocks.listCompetitors.mockResolvedValue([
+      { domain: "rival.com" },
+      { domain: "other.com" },
+    ]);
+  });
+
+  it("passes the saved competitor domains to the check when the config tracks them", async () => {
+    mocks.getConfigById.mockResolvedValue({
+      isActive: true,
+      trackCompetitors: true,
+    });
+
+    await runWorkflow({});
+
+    expect(mocks.listCompetitors).toHaveBeenCalledWith("project_1");
+    expect(mocks.runLiveCheck).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        competitorDomains: ["rival.com", "other.com"],
+      }),
+    );
+  });
+
+  it("loads no competitors when the config does not track them", async () => {
+    mocks.getConfigById.mockResolvedValue({
+      isActive: true,
+      trackCompetitors: false,
+    });
+
+    await runWorkflow({});
+
+    expect(mocks.listCompetitors).not.toHaveBeenCalled();
+    expect(mocks.runLiveCheck).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ competitorDomains: [] }),
+    );
+  });
+});
+
 describe("rank check finalization", () => {
   beforeEach(() => {
     mocks.getConfigById.mockResolvedValue({ isActive: true });
@@ -174,5 +225,26 @@ describe("rank check finalization", () => {
       }),
     );
     expect(mocks.updateConfig).not.toHaveBeenCalled();
+  });
+
+  it("reports a run that missed a whole device as partial", async () => {
+    mocks.getSnapshotsForRun.mockResolvedValue(
+      keywords(3).map((kw) => ({
+        trackingKeywordId: kw.id,
+        device: "desktop",
+      })),
+    );
+
+    await runWorkflow({ devices: "both" });
+
+    expect(mocks.updateRun).toHaveBeenCalledWith(
+      "run_1",
+      expect.objectContaining({
+        status: "completed",
+        keywordsChecked: 3,
+        errorMessage:
+          "Checked 3 of 3 desktop and 0 of 3 mobile keyword(s): Invalid Field: 'location_name'.",
+      }),
+    );
   });
 });

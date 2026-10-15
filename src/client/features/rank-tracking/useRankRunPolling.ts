@@ -31,6 +31,9 @@ export function useRankRunPolling(projectId: string, configId: string) {
           queryKey: ["rankPositionMatrix", projectId, configId],
         });
         void queryClient.invalidateQueries({
+          queryKey: ["rankCompetitorMatrix", projectId, configId],
+        });
+        void queryClient.invalidateQueries({
           queryKey: ["rankKeywordHistory", projectId, configId],
         });
       }

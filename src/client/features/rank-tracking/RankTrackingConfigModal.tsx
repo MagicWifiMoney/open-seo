@@ -16,7 +16,8 @@ import {
 import { Field, FieldLabel } from "@/client/components/ui/field";
 import type { RankTrackingConfig } from "@/types/schemas/rank-tracking";
 import { domainField, normalizeDomain } from "@/types/schemas/domain";
-import { pagesToDepth, estimateRankCheckCredits } from "@/shared/rank-tracking";
+import { pagesToDepth } from "@/shared/rank-tracking";
+import { CostEstimate } from "./RankTrackingCostEstimate";
 import { getLanguageCode } from "@/client/features/keywords/locations";
 import {
   SERP_LANGUAGE_OPTIONS,
@@ -33,6 +34,8 @@ import {
   type SaveConfigInput,
 } from "./useSaveConfigMutations";
 import { ScheduleField } from "./ScheduleField";
+import { isHostedClientAuthMode } from "@/lib/auth-mode";
+import { SCHEDULED_RANK_CHECKS_PAUSED } from "@/shared/rank-tracking-pause";
 import {
   localScheduleTimeFrom,
   randomScheduleDate,
@@ -150,6 +153,8 @@ function RankTrackingConfigModalContent({
 }: Props & { initialMarket: ProjectMarket }) {
   const countryId = useId();
   const isEdit = !!existingConfig;
+  const scheduledChecksPaused =
+    SCHEDULED_RANK_CHECKS_PAUSED && isHostedClientAuthMode();
   const [createdConfigId, setCreatedConfigId] = useState<string>();
   // An untouched edit leaves the stored run time alone; anything that changes
   // the schedule sends the time on screen so it is the one that gets saved.
@@ -174,7 +179,9 @@ function RankTrackingConfigModalContent({
     targetingMode: existingConfig?.locationName ? "local" : "national",
     locationName: existingConfig?.locationName ?? undefined,
     devices: existingConfig?.devices ?? "mobile",
-    schedule: existingConfig?.scheduleInterval ?? "weekly",
+    schedule:
+      existingConfig?.scheduleInterval ??
+      (scheduledChecksPaused ? "manual" : "weekly"),
     // Shown and edited in the browser's timezone; the server converts it to UTC.
     scheduleTime: localScheduleTimeFrom(
       existingConfig?.nextCheckAt
@@ -182,6 +189,7 @@ function RankTrackingConfigModalContent({
         : randomScheduleDate(),
     ),
     serpDepth: existingConfig?.serpDepth ?? 40,
+    trackCompetitors: existingConfig?.trackCompetitors ?? false,
   }));
 
   const form = useAppForm({
@@ -336,6 +344,7 @@ function RankTrackingConfigModalContent({
                   form.setFieldValue("scheduleTime", time);
                   setScheduleTimeEdited(true);
                 }}
+                scheduledChecksPaused={scheduledChecksPaused}
               />
 
               <form.AppField name="serpDepth">
@@ -348,10 +357,22 @@ function RankTrackingConfigModalContent({
                 )}
               </form.AppField>
 
+              <form.AppField name="trackCompetitors">
+                {(field) => (
+                  <field.SwitchField
+                    label="Track competitors"
+                    description="Record where each saved project competitor ranks for every keyword. Uses the same results, but checks always crawl the full search depth, so they cost the full-depth price."
+                  />
+                )}
+              </form.AppField>
+
               <CostEstimate
                 devices={values.devices}
                 serpDepth={values.serpDepth}
                 schedule={values.schedule}
+                trackCompetitors={values.trackCompetitors}
+                projectId={projectId}
+                configId={existingConfig?.id}
               />
 
               <DialogFooter>
@@ -372,41 +393,5 @@ function RankTrackingConfigModalContent({
         )}
       </DialogContent>
     </Dialog>
-  );
-}
-
-function CostEstimate({
-  devices,
-  serpDepth,
-  schedule,
-}: Pick<ConfigFormValues, "devices" | "serpDepth" | "schedule">) {
-  // Scheduled checks run through the cheaper task queue; manual configs only
-  // ever pay the live price.
-  const { costUsd: costPerKeyword } = estimateRankCheckCredits(
-    ["plain keyword"],
-    devices,
-    serpDepth,
-    schedule === "manual" ? "live" : "queued",
-  );
-  const checksPerMonth =
-    schedule === "daily" ? 30 : schedule === "weekly" ? 4 : 1;
-  return (
-    <div className="space-y-0.5 rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground">
-      <div>
-        <span className="font-mono font-semibold text-foreground">
-          ~${costPerKeyword.toFixed(4)}
-        </span>{" "}
-        per keyword per check
-      </div>
-      {schedule !== "manual" && (
-        <div>
-          50 keywords would cost{" "}
-          <span className="font-mono font-semibold text-foreground">
-            ~${(costPerKeyword * 50 * checksPerMonth).toFixed(2)}
-          </span>
-          /month
-        </div>
-      )}
-    </div>
   );
 }
