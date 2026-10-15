@@ -7,12 +7,12 @@ import type { OverviewCompare, OverviewRange } from "@/types/schemas/overview";
 
 /** Search Console trails by about three days; GA4 trails less. One shared end
  *  date keeps both sources on the same window. */
-export const DATA_LAG_DAYS = 3;
+const DATA_LAG_DAYS = 3;
 /** The pre-launch reference window: the 12 weeks before launch. */
-export const PRE_LAUNCH_WEEKS = 12;
+const PRE_LAUNCH_WEEKS = 12;
 /** Search Console keeps about 16 months; used for the "seen before launch"
  *  lookback. */
-export const PRE_LAUNCH_LOOKBACK_DAYS = 480;
+const PRE_LAUNCH_LOOKBACK_DAYS = 480;
 
 export const RANGE_LABELS: Record<OverviewRange, string> = {
   last_28_days: "Last 28 days",

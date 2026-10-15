@@ -1,3 +1,5 @@
+import { reverse, sort } from "remeda";
+
 export type RunCoverage = {
   runId: string;
   checkedAt: string;
@@ -14,9 +16,9 @@ export type PositionCell = {
   position: number | null;
 };
 
-export type BandKey = "top3" | "top10" | "top20" | "top40" | "none";
+type BandKey = "top3" | "top10" | "top20" | "top40" | "none";
 
-export const BANDS: Array<{
+const BANDS: Array<{
   key: BandKey;
   label: string;
   meaning: string;
@@ -94,18 +96,22 @@ export type RankingsView = {
 const MOVER_LIMIT = 5;
 const LIST_LIMIT = 5;
 
+function byKeyword(a: Mover, b: Mover): number {
+  return a.keyword.localeCompare(b.keyword);
+}
+
 function checked(run: RunCoverage): number {
   return run.top3 + run.top4to10 + run.top11to20 + run.notRanking;
 }
 
 function positionsFor(cells: PositionCell[], runId: string) {
-  const byKeyword = new Map<string, number | null>();
+  const positions = new Map<string, number | null>();
   for (const cell of cells) {
     if (cell.runId === runId) {
-      byKeyword.set(cell.trackingKeywordId, cell.position);
+      positions.set(cell.trackingKeywordId, cell.position);
     }
   }
-  return byKeyword;
+  return positions;
 }
 
 function countBands(positions: Map<string, number | null>) {
@@ -137,10 +143,9 @@ export function buildRankingsView(input: {
   if (!latest) return null;
 
   const withCells = new Set(cells.map((cell) => cell.runId));
-  const previous = runs
-    .slice(0, -1)
-    .reverse()
-    .find((run) => run.notChecked === 0 && withCells.has(run.runId));
+  const previous = reverse(runs.slice(0, -1)).find(
+    (run) => run.notChecked === 0 && withCells.has(run.runId),
+  );
 
   const live = (positions: Map<string, number | null>) =>
     new Map([...positions].filter(([id]) => names.has(id)));
@@ -171,7 +176,6 @@ export function buildRankingsView(input: {
       }
     }
   }
-  const byKeyword = (a: Mover, b: Mover) => a.keyword.localeCompare(b.keyword);
   gains.sort((a, b) => b.change - a.change || byKeyword(a, b));
   losses.sort((a, b) => a.change - b.change || byKeyword(a, b));
 
@@ -193,8 +197,8 @@ export function buildRankingsView(input: {
     topTenBefore: beforeCounts ? beforeCounts.top3 + beforeCounts.top10 : null,
     gains: gains.slice(0, MOVER_LIMIT),
     losses: losses.slice(0, MOVER_LIMIT),
-    entered: entered.sort().slice(0, LIST_LIMIT),
-    dropped: dropped.sort().slice(0, LIST_LIMIT),
+    entered: sort(entered, (a, b) => a.localeCompare(b)).slice(0, LIST_LIMIT),
+    dropped: sort(dropped, (a, b) => a.localeCompare(b)).slice(0, LIST_LIMIT),
   };
 }
 

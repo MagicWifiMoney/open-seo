@@ -48,6 +48,7 @@ import { Route as AppPProjectIdAiVisibilityRouteImport } from './routes/_app/p/$
 import { Route as AppPProjectIdBacklinksRouteImport } from './routes/_app/p/$projectId/backlinks'
 import { Route as AppPProjectIdBrandLookupRouteImport } from './routes/_app/p/$projectId/brand-lookup'
 import { Route as AppPProjectIdContextRouteImport } from './routes/_app/p/$projectId/context'
+import { Route as AppPProjectIdDashboardRouteImport } from './routes/_app/p/$projectId/dashboard'
 import { Route as AppPProjectIdDomainRouteImport } from './routes/_app/p/$projectId/domain'
 import { Route as AppPProjectIdKeywordsRouteImport } from './routes/_app/p/$projectId/keywords'
 import { Route as AppPProjectIdPromptExplorerRouteImport } from './routes/_app/p/$projectId/prompt-explorer'
@@ -270,6 +271,11 @@ const AppPProjectIdContextRoute = AppPProjectIdContextRouteImport.update({
   path: '/context',
   getParentRoute: () => AppPProjectIdRouteRoute,
 } as any)
+const AppPProjectIdDashboardRoute = AppPProjectIdDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppPProjectIdRouteRoute,
+} as any)
 const AppPProjectIdDomainRoute = AppPProjectIdDomainRouteImport.update({
   id: '/domain',
   path: '/domain',
@@ -442,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/p/$projectId/backlinks': typeof AppPProjectIdBacklinksRoute
   '/p/$projectId/brand-lookup': typeof AppPProjectIdBrandLookupRoute
   '/p/$projectId/context': typeof AppPProjectIdContextRoute
+  '/p/$projectId/dashboard': typeof AppPProjectIdDashboardRoute
   '/p/$projectId/domain': typeof AppPProjectIdDomainRoute
   '/p/$projectId/keywords': typeof AppPProjectIdKeywordsRoute
   '/p/$projectId/prompt-explorer': typeof AppPProjectIdPromptExplorerRoute
@@ -501,6 +508,7 @@ export interface FileRoutesByTo {
   '/p/$projectId/backlinks': typeof AppPProjectIdBacklinksRoute
   '/p/$projectId/brand-lookup': typeof AppPProjectIdBrandLookupRoute
   '/p/$projectId/context': typeof AppPProjectIdContextRoute
+  '/p/$projectId/dashboard': typeof AppPProjectIdDashboardRoute
   '/p/$projectId/domain': typeof AppPProjectIdDomainRoute
   '/p/$projectId/keywords': typeof AppPProjectIdKeywordsRoute
   '/p/$projectId/prompt-explorer': typeof AppPProjectIdPromptExplorerRoute
@@ -565,6 +573,7 @@ export interface FileRoutesById {
   '/_app/p/$projectId/backlinks': typeof AppPProjectIdBacklinksRoute
   '/_app/p/$projectId/brand-lookup': typeof AppPProjectIdBrandLookupRoute
   '/_app/p/$projectId/context': typeof AppPProjectIdContextRoute
+  '/_app/p/$projectId/dashboard': typeof AppPProjectIdDashboardRoute
   '/_app/p/$projectId/domain': typeof AppPProjectIdDomainRoute
   '/_app/p/$projectId/keywords': typeof AppPProjectIdKeywordsRoute
   '/_app/p/$projectId/prompt-explorer': typeof AppPProjectIdPromptExplorerRoute
@@ -629,6 +638,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/backlinks'
     | '/p/$projectId/brand-lookup'
     | '/p/$projectId/context'
+    | '/p/$projectId/dashboard'
     | '/p/$projectId/domain'
     | '/p/$projectId/keywords'
     | '/p/$projectId/prompt-explorer'
@@ -688,6 +698,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/backlinks'
     | '/p/$projectId/brand-lookup'
     | '/p/$projectId/context'
+    | '/p/$projectId/dashboard'
     | '/p/$projectId/domain'
     | '/p/$projectId/keywords'
     | '/p/$projectId/prompt-explorer'
@@ -751,6 +762,7 @@ export interface FileRouteTypes {
     | '/_app/p/$projectId/backlinks'
     | '/_app/p/$projectId/brand-lookup'
     | '/_app/p/$projectId/context'
+    | '/_app/p/$projectId/dashboard'
     | '/_app/p/$projectId/domain'
     | '/_app/p/$projectId/keywords'
     | '/_app/p/$projectId/prompt-explorer'
@@ -1074,6 +1086,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPProjectIdContextRouteImport
       parentRoute: typeof AppPProjectIdRouteRoute
     }
+    '/_app/p/$projectId/dashboard': {
+      id: '/_app/p/$projectId/dashboard'
+      path: '/dashboard'
+      fullPath: '/p/$projectId/dashboard'
+      preLoaderRoute: typeof AppPProjectIdDashboardRouteImport
+      parentRoute: typeof AppPProjectIdRouteRoute
+    }
     '/_app/p/$projectId/domain': {
       id: '/_app/p/$projectId/domain'
       path: '/domain'
@@ -1319,6 +1338,7 @@ interface AppPProjectIdRouteRouteChildren {
   AppPProjectIdBacklinksRoute: typeof AppPProjectIdBacklinksRoute
   AppPProjectIdBrandLookupRoute: typeof AppPProjectIdBrandLookupRoute
   AppPProjectIdContextRoute: typeof AppPProjectIdContextRoute
+  AppPProjectIdDashboardRoute: typeof AppPProjectIdDashboardRoute
   AppPProjectIdDomainRoute: typeof AppPProjectIdDomainRoute
   AppPProjectIdKeywordsRoute: typeof AppPProjectIdKeywordsRoute
   AppPProjectIdPromptExplorerRoute: typeof AppPProjectIdPromptExplorerRoute
@@ -1341,6 +1361,7 @@ const AppPProjectIdRouteRouteChildren: AppPProjectIdRouteRouteChildren = {
   AppPProjectIdBacklinksRoute: AppPProjectIdBacklinksRoute,
   AppPProjectIdBrandLookupRoute: AppPProjectIdBrandLookupRoute,
   AppPProjectIdContextRoute: AppPProjectIdContextRoute,
+  AppPProjectIdDashboardRoute: AppPProjectIdDashboardRoute,
   AppPProjectIdDomainRoute: AppPProjectIdDomainRoute,
   AppPProjectIdKeywordsRoute: AppPProjectIdKeywordsRoute,
   AppPProjectIdPromptExplorerRoute: AppPProjectIdPromptExplorerRoute,

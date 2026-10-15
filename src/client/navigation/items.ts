@@ -8,6 +8,7 @@ import {
   FileText,
   Globe,
   LayoutDashboard,
+  LayoutGrid,
   Link2,
   MessageSquare,
   Search,
@@ -19,11 +20,16 @@ import { GoogleGlyphMuted } from "@/client/features/gsc/GoogleGlyph";
 const projectNavItems = [
   {
     to: "/p/$projectId" as const,
-    label: "Dashboard",
+    label: "Overview",
     icon: LayoutDashboard,
     // Without exact matching, the index path is a prefix of every project
     // route and the Dashboard item would render active everywhere.
     activeOptions: { exact: true, includeSearch: false },
+  },
+  {
+    to: "/p/$projectId/dashboard" as const,
+    label: "Classic Dashboard",
+    icon: LayoutGrid,
   },
   {
     to: "/p/$projectId/keywords" as const,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPageTable, pagePath } from "./overviewPages";
+import { buildPageTable, pagePath } from "./overviewPageRows";
 
 const row = (key: string, clicks: number, impressions = 10, position = 5) => ({
   key,

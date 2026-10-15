@@ -1,4 +1,7 @@
-import { formatNumber } from "@/client/features/traffic/trafficFormat";
+import {
+  formatNumber,
+  KEY_EVENTS_NOT_COMPARABLE,
+} from "@/client/features/traffic/trafficFormat";
 import type { Kpi, KpiKey } from "./overviewMetrics";
 
 /** Counts below this are described in plain numbers, not percentages: "up 300%"
@@ -33,6 +36,9 @@ export type SentenceInput = {
   kpis: Partial<Record<KpiKey, Kpi>>;
   rankings: RankSummary | null;
   newPages: NewPagesSummary | null;
+  /** True when either window is not entirely after launch, so key events
+   *  (a different event before launch) must not be compared. */
+  keyEventsNotComparable?: boolean;
 };
 
 const COUNT_SUBJECT: Record<Exclude<KpiKey, "position">, string> = {
@@ -65,6 +71,13 @@ function describeCount(
     return `${subject} were ${direction}: ${windows}. The starting number is small, so no percentage is shown.`;
   }
   return `${subject} were ${direction} ${Math.abs(Math.round(kpi.percent))}%: ${windows}.`;
+}
+
+function describeKeyEvents(kpi: Kpi, input: SentenceInput): string | null {
+  if (!input.keyEventsNotComparable)
+    return describeCount("keyEvents", kpi, input);
+  if (kpi.current === null) return null;
+  return `Key events from organic search visits were ${formatNumber(kpi.current)} in ${input.currentLabel}. ${KEY_EVENTS_NOT_COMPARABLE}`;
 }
 
 function describePosition(kpi: Kpi, input: SentenceInput): string | null {
@@ -111,7 +124,7 @@ export function buildWhatChanged(input: SentenceInput): string[] {
   const { kpis } = input;
   const candidates: Array<string | null> = [
     kpis.clicks ? describeCount("clicks", kpis.clicks, input) : null,
-    kpis.keyEvents ? describeCount("keyEvents", kpis.keyEvents, input) : null,
+    kpis.keyEvents ? describeKeyEvents(kpis.keyEvents, input) : null,
     kpis.position ? describePosition(kpis.position, input) : null,
     input.rankings ? describeRankings(input.rankings) : null,
     input.newPages ? describeNewPages(input.newPages, input) : null,

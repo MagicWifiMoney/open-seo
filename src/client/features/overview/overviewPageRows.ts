@@ -1,3 +1,5 @@
+import { sort } from "remeda";
+
 export type PageRow = {
   key: string;
   clicks: number;
@@ -36,8 +38,7 @@ export function buildPageTable(input: {
   const before = input.comparePages
     ? new Map(input.comparePages.map((row) => [row.key, row]))
     : null;
-  return [...input.pages]
-    .sort(byClicks)
+  return sort(input.pages, byClicks)
     .slice(0, input.limit ?? TABLE_LIMIT)
     .map((row) => {
       if (!before) return { ...row, clicksBefore: null, positionBefore: null };

@@ -24,7 +24,7 @@ export type Kpi = {
   better: boolean | null;
 };
 
-export type Ga4Totals = { sessions: number; keyEvents: number };
+type Ga4Totals = { sessions: number; keyEvents: number };
 
 /** Sum organic sessions and key events over a window of dense daily points. */
 export function sumGa4(days: DayPoint[], span: DateSpan): Ga4Totals {

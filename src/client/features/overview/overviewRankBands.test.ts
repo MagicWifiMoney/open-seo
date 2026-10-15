@@ -5,7 +5,7 @@ import {
   defaultTracker,
   type PositionCell,
   type RunCoverage,
-} from "./overviewRankings";
+} from "./overviewRankBands";
 
 const run = (runId: string, over: Partial<RunCoverage> = {}): RunCoverage => ({
   runId,

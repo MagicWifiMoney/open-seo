@@ -85,6 +85,19 @@ describe("buildWhatChanged", () => {
     expect(sentence).toContain("can undercount");
   });
 
+  it("never compares key events when the windows span the launch", () => {
+    const keyEvents = buildKpi({ key: "keyEvents", current: 6, base: 40 });
+    const [sentence] = buildWhatChanged({
+      ...base,
+      kpis: { keyEvents },
+      keyEventsNotComparable: true,
+    });
+    expect(sentence).toBe(
+      "Key events from organic search visits were 6 in WINDOW_A. Tracking changed at launch, so earlier counts are not comparable.",
+    );
+    expect(sentence).not.toMatch(/down|up|same|WINDOW_B/);
+  });
+
   it("returns at most five sentences", () => {
     const kpi = (key: "clicks" | "impressions" | "sessions" | "keyEvents") =>
       buildKpi({ key, current: 50, base: 20 });
