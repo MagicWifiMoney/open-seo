@@ -9,6 +9,7 @@ import {
   daysBetween,
   fillDays,
   isComparableAcrossLaunch,
+  showReferenceSpan,
   launchBucketKey,
   monthEnd,
   percentChange,
@@ -274,5 +275,13 @@ describe("visible buckets and launch marker", () => {
       end: "2026-03-01",
     });
     expect(launchBucketKey("2026-08-15", "week", buckets)).toBeNull();
+  });
+});
+
+describe("reference span line", () => {
+  it("is hidden for key events and shown for other metrics", () => {
+    expect(showReferenceSpan("key_events", true)).toBe(false);
+    expect(showReferenceSpan("sessions", true)).toBe(true);
+    expect(showReferenceSpan("sessions", false)).toBe(false);
   });
 });

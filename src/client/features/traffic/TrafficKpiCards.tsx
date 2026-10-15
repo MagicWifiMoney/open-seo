@@ -21,6 +21,7 @@ import {
 import {
   compareAverages,
   metricField,
+  showReferenceSpan,
   type AveragedPeriod,
 } from "./trafficMath";
 
@@ -130,7 +131,7 @@ export function TrafficKpiCards({
                     <dt className="inline font-medium">Post-launch: </dt>
                     <dd className="inline">{spanText(post, "week")}</dd>
                   </div>
-                  {reference ? (
+                  {reference && showReferenceSpan(metric, true) ? (
                     <div>
                       <dt className="inline font-medium">{referenceName}: </dt>
                       <dd className="inline">{spanText(reference, "week")}</dd>
