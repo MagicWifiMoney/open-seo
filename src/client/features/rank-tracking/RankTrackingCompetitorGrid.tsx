@@ -118,7 +118,7 @@ function CompetitorTable({
       <EmptyState
         kind="no-data"
         title="No competitor rankings yet"
-        description="Add competitors to the project, then run a check. Competitor positions are read from the same results at no extra cost."
+        description="Add competitors to the project and turn on Track competitors in the tracker settings, then run a check. Tracking competitors can raise the cost of a check, so review the estimate first."
       />
     );
   }

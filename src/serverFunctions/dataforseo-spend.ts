@@ -35,6 +35,9 @@ export const getDataforseoSpend = createServerFn({ method: "POST" })
       balanceUsd: toNumber(data?.money?.balance),
       lifetimeDepositedUsd: toNumber(data?.money?.total),
       dayByFunction,
-      dayTotalUsd: dayByFunction.reduce((sum, row) => sum + row.usd, 0),
+      // `day.total` is the account-wide figure; per-function keys can lag it.
+      dayTotalUsd:
+        toNumber(day.total) ??
+        dayByFunction.reduce((sum, row) => sum + row.usd, 0),
     };
   });
