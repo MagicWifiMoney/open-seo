@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { CardShell } from "@/client/components/CardShell";
 import { QueryError } from "@/client/components/QueryState";
 import { Skeleton } from "@/client/components/ui/skeleton";
 import { GoogleConnectionCard } from "@/client/features/integrations/GoogleConnectionCard";
@@ -10,6 +9,7 @@ import { getGa4TrafficHistory } from "@/serverFunctions/ga4Traffic";
 import { getOverviewSearchReport } from "@/serverFunctions/overview";
 import type { OverviewSearch } from "@/types/schemas/overview";
 import { OverviewKpis } from "./OverviewKpis";
+import { OverviewStatTiles } from "./OverviewStatTiles";
 import { buildOverviewView, spanLabel as label } from "./overviewView";
 import { OverviewOffsiteAuthority } from "./OverviewOffsiteAuthority";
 import { OverviewPages } from "./OverviewPages";
@@ -172,19 +172,11 @@ export function OverviewPage({
           </div>
         ) : view ? (
           <>
-            {view.sentences.length > 0 ? (
-              <section aria-label="What changed">
-                <CardShell title="What changed">
-                  <ul className="list-disc space-y-2 pl-5 text-sm">
-                    {view.sentences.map((sentence) => (
-                      <li key={sentence}>{sentence}</li>
-                    ))}
-                  </ul>
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Written from the numbers below. It says what moved, not why.
-                  </p>
-                </CardShell>
-              </section>
+            {view.tiles.length > 0 || view.sentences.length > 0 ? (
+              <OverviewStatTiles
+                tiles={view.tiles}
+                sentences={view.sentences}
+              />
             ) : null}
 
             {gscQuery.isError && !gscQuery.data ? (

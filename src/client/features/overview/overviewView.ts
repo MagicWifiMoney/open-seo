@@ -7,6 +7,7 @@ import type { getGa4TrafficHistory } from "@/serverFunctions/ga4Traffic";
 import type { getOverviewSearchReport } from "@/serverFunctions/overview";
 import type { OverviewDevice } from "@/types/schemas/overview";
 import { buildKpi, covers, sumGa4, type Kpi } from "./overviewMetrics";
+import { buildStatTiles, gaSeries } from "./overviewWidgets";
 import type { KpiCardData } from "./OverviewKpis";
 import { buildPageTable } from "./overviewPageRows";
 import type { CompareWindow } from "./overviewRange";
@@ -83,6 +84,7 @@ export function buildOverviewView(input: {
         }),
         currentLabel,
         compareLabel,
+        series: gaSeries(days, current, key, coverage),
         note:
           key === "keyEvents" && !keyEventsComparable && now
             ? KEY_EVENTS_NOT_COMPARABLE
@@ -171,6 +173,16 @@ export function buildOverviewView(input: {
     newPages,
   });
 
+  const tiles = buildStatTiles({
+    currentLabel,
+    compareLabel,
+    kpis: Object.fromEntries(
+      Object.values(kpis).map((card) => [card.kpi.key, card.kpi]),
+    ),
+    rankings: rankSummary,
+    newPages,
+  });
+
   const comparePages = gsc?.comparePages ?? null;
   const topRows = gsc
     ? buildPageTable({ pages: gsc.pages, comparePages, scale })
@@ -192,6 +204,7 @@ export function buildOverviewView(input: {
     compareLabel,
     cards: order.flatMap((key) => (kpis[key] ? [kpis[key]] : [])),
     sentences,
+    tiles,
     topRows,
     newRows,
     lookbackLabel,

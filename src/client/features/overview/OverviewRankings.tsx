@@ -22,7 +22,7 @@ import {
   type OverviewDevice,
 } from "@/types/schemas/overview";
 import { COVERAGE_MEANING } from "./overviewCopy";
-import type { Mover, RankingsView } from "./overviewRankBands";
+import type { BandRow, Mover, RankingsView } from "./overviewRankBands";
 import type { useOverviewRankings } from "./useOverviewRankings";
 
 type Rankings = ReturnType<typeof useOverviewRankings>;
@@ -80,6 +80,60 @@ function NameList({ title, names }: { title: string; names: string[] }) {
   );
 }
 
+const BAND_COLORS = [
+  "bg-primary",
+  "bg-primary/70",
+  "bg-primary/45",
+  "bg-primary/25",
+  "bg-muted-foreground/30",
+];
+
+function BandBar({ bands, device }: { bands: BandRow[]; device: string }) {
+  const total = bands.reduce((sum, band) => sum + band.count, 0);
+  return (
+    <div className="space-y-3">
+      {total > 0 ? (
+        <div
+          className="flex h-3 w-full overflow-hidden rounded-full bg-muted"
+          role="img"
+          aria-label={`Keywords by position band, ${device}: ${bands.map((band) => `${band.label} ${band.count}`).join(", ")}`}
+        >
+          {bands.map((band, i) =>
+            band.count > 0 ? (
+              <div
+                key={band.key}
+                className={BAND_COLORS[i]}
+                style={{ width: `${(band.count / total) * 100}%` }}
+              />
+            ) : null,
+          )}
+        </div>
+      ) : null}
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        {bands.map((band, i) => (
+          <li
+            key={band.key}
+            title={band.meaning}
+            className="min-w-0 rounded-xl border border-border p-3"
+          >
+            <p className="text-3xl font-semibold tabular-nums">{band.count}</p>
+            <p className="flex items-center gap-1.5 text-sm font-medium">
+              <span
+                aria-hidden
+                className={`size-2.5 shrink-0 rounded-full ${BAND_COLORS[i]}`}
+              />
+              <span className="min-w-0 break-words">{band.label}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {changeText(band.count, band.before)}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function Body({ view, device }: { view: RankingsView; device: string }) {
   return (
     <div className="space-y-4">
@@ -95,48 +149,18 @@ function Body({ view, device }: { view: RankingsView; device: string }) {
           .
         </span>
       </div>
-      <p className="text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">What this means: </span>
-        {COVERAGE_MEANING}
-        {view.partial
-          ? " This run did not check every keyword, so the bands below can undercount."
-          : ""}
-      </p>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[26rem] text-sm">
-          <caption className="sr-only">
-            Keywords by position band, {device}
-          </caption>
-          <thead>
-            <tr className="border-b border-border text-left text-xs text-muted-foreground">
-              <th className="py-1.5 pr-3 font-medium">Position band</th>
-              <th className="whitespace-nowrap py-1.5 pr-3 text-right font-medium">Keywords</th>
-              <th className="py-1.5 font-medium">Change vs previous run</th>
-            </tr>
-          </thead>
-          <tbody>
-            {view.bands.map((band) => (
-              <tr
-                key={band.key}
-                className="border-b border-border/60 align-top"
-              >
-                <td className="py-2 pr-3">
-                  <div className="font-medium">{band.label}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {band.meaning}
-                  </div>
-                </td>
-                <td className="py-2 pr-3 text-right text-lg font-semibold tabular-nums">
-                  {band.count}
-                </td>
-                <td className="py-2 text-muted-foreground">
-                  {changeText(band.count, band.before)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <details className="text-xs text-muted-foreground">
+        <summary className="w-fit cursor-pointer select-none">
+          What this means
+        </summary>
+        <p className="mt-1">
+          {COVERAGE_MEANING}
+          {view.partial
+            ? " This run did not check every keyword, so the bands below can undercount."
+            : ""}
+        </p>
+      </details>
+      <BandBar bands={view.bands} device={device} />
       <div className="grid gap-4 sm:grid-cols-2">
         <MoverList
           title="Biggest gains"

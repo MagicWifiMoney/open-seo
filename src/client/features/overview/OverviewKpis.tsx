@@ -1,70 +1,93 @@
 import { Card } from "@/client/components/ui/card";
-import {
-  formatNumber,
-  formatPercent,
-} from "@/client/features/traffic/trafficFormat";
+import { formatNumber } from "@/client/features/traffic/trafficFormat";
 import { KPI_COPY } from "./overviewCopy";
 import type { Kpi, KpiKey } from "./overviewMetrics";
+import { deltaChip, sparklinePoints, type Tone } from "./overviewWidgets";
 
 export type KpiCardData = {
   kpi: Kpi;
-  /** Printed windows under the number. */
+  /** Printed windows under the number, on one line. */
   currentLabel: string;
   compareLabel: string;
   /** Shown instead of a delta when the number cannot be read. */
   note?: string;
+  /** Daily-ish values across the current window; absent when the source has no series. */
+  series?: number[] | null;
 };
 
 function formatValue(key: KpiKey, value: number): string {
   return key === "position" ? value.toFixed(1) : formatNumber(value);
 }
 
-function deltaText(kpi: Kpi): string {
-  if (kpi.current === null || kpi.base === null || kpi.absolute === null) {
-    return "No comparison available";
-  }
-  const base = formatValue(kpi.key, kpi.base);
-  if (kpi.trend === "flat") return `About the same as ${base}`;
-  const way = kpi.trend === "up" ? "Up" : "Down";
-  if (kpi.key === "position") {
-    return `${way} ${Math.abs(kpi.absolute).toFixed(1)} places from ${base}`;
-  }
-  const small = kpi.base < 10 || kpi.percent === null;
-  return small
-    ? `${way} from ${base}`
-    : `${way} ${formatPercent(Math.abs(kpi.percent ?? 0)).replace("+", "")} from ${base}`;
+const TONE_CLASS = {
+  good: "bg-success/10 text-success",
+  bad: "bg-destructive/10 text-destructive",
+  neutral: "bg-muted text-muted-foreground",
+} as const;
+
+const ARROW = { up: "\u2191", down: "\u2193", flat: "\u2192" } as const;
+
+function Sparkline({ series, tone }: { series: number[]; tone: Tone }) {
+  return (
+    <svg
+      viewBox="0 0 120 32"
+      preserveAspectRatio="none"
+      className={`h-8 w-24 shrink-0 ${tone === "bad" ? "text-destructive" : tone === "good" ? "text-success" : "text-muted-foreground"}`}
+      role="img"
+      aria-label={`Trend across the window, ${series.length} points`}
+    >
+      <polyline
+        points={sparklinePoints(series, 120, 32)}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
 }
 
 function KpiCard({ data }: { data: KpiCardData }) {
   const { kpi } = data;
   const copy = KPI_COPY[kpi.key];
-  const tone =
-    kpi.better === true
-      ? "text-success"
-      : kpi.better === false
-        ? "text-destructive"
-        : "text-muted-foreground";
+  const chip = deltaChip(kpi);
+  const tone: Tone = chip?.tone ?? "neutral";
   return (
     <Card size="sm" className="gap-2 p-4 print:break-inside-avoid">
-      <div>
-        <h3 className="text-sm font-semibold">{copy.label}</h3>
-        <p className="text-xs text-muted-foreground">{copy.source}</p>
+      <h3 className="text-sm font-semibold">{copy.label}</h3>
+      <div className="flex items-end justify-between gap-3">
+        <p className="min-w-0 text-4xl font-semibold tabular-nums">
+          {kpi.current === null ? "n/a" : formatValue(kpi.key, kpi.current)}
+        </p>
+        {data.series ? <Sparkline series={data.series} tone={tone} /> : null}
       </div>
-      <p className="text-3xl font-semibold tabular-nums">
-        {kpi.current === null ? "n/a" : formatValue(kpi.key, kpi.current)}
+      {data.note ? (
+        <p className="text-sm font-medium text-muted-foreground">{data.note}</p>
+      ) : chip ? (
+        <p>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-sm font-medium tabular-nums ${TONE_CLASS[chip.tone]}`}
+          >
+            <span aria-hidden>{ARROW[chip.arrow]}</span>
+            {chip.text}
+          </span>
+        </p>
+      ) : (
+        <p className="text-sm font-medium text-muted-foreground">
+          No comparison available
+        </p>
+      )}
+      <p className="break-words text-xs text-muted-foreground">
+        {data.currentLabel} vs {data.compareLabel}, source {copy.short}
       </p>
-      <p className={`text-sm font-medium ${tone}`}>
-        {data.note ?? deltaText(kpi)}
-      </p>
-      <p className="text-xs text-muted-foreground">
-        Now: {data.currentLabel}
-        <br />
-        Compared with: {data.compareLabel}
-      </p>
-      <p className="border-t border-border pt-2 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">What this means: </span>
-        {copy.meaning}
-      </p>
+      <details className="text-xs text-muted-foreground">
+        <summary className="w-fit cursor-pointer select-none print:hidden">
+          What this means
+        </summary>
+        <p className="mt-1">{copy.meaning}</p>
+      </details>
     </Card>
   );
 }
