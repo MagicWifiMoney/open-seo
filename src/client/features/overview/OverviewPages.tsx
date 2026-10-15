@@ -119,21 +119,21 @@ export function OverviewPages({
             }
           />
         ) : (
-          <Table>
+          <Table className="min-w-[40rem]">
             <TableHeader>
               <TableRow>
-                <TableHead>Page</TableHead>
-                <TableHead className="text-right">Clicks</TableHead>
-                <TableHead className="text-right">Shown</TableHead>
-                <TableHead className="text-right">Avg position</TableHead>
-                <TableHead className="text-right">Clicks change</TableHead>
-                <TableHead className="text-right">Position change</TableHead>
+                <TableHead className="min-w-[12rem]">Page</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Clicks</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Shown</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Avg position</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Clicks change</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Position change</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.key}>
-                  <TableCell className="max-w-[16rem] break-all">
+                  <TableCell className="min-w-[12rem] max-w-[16rem] break-all">
                     {pagePath(row.key)}
                     {tab === "new" ? (
                       <Badge variant="info" className="ml-2">
@@ -141,19 +141,19 @@ export function OverviewPages({
                       </Badge>
                     ) : null}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">
                     {formatNumber(row.clicks)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">
                     {formatNumber(row.impressions)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">
                     {row.position.toFixed(1)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">
                     {clicksChange(row)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="whitespace-nowrap text-right tabular-nums">
                     {positionChange(row)}
                   </TableCell>
                 </TableRow>

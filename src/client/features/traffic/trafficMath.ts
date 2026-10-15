@@ -239,6 +239,15 @@ export function isComparableAcrossLaunch(metric: TrafficMetric): boolean {
   return metric !== "key_events";
 }
 
+/** Whether a KPI card lists the reference period dates. Key events have no
+ *  baseline, so the reference line is hidden for them. */
+export function showReferenceSpan(
+  metric: TrafficMetric,
+  hasReference: boolean,
+): boolean {
+  return hasReference && isComparableAcrossLaunch(metric);
+}
+
 /** Post-launch average vs a reference average. Key events are null: see
  *  isComparableAcrossLaunch. */
 export function compareAverages(

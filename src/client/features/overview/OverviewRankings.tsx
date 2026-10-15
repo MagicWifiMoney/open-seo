@@ -103,14 +103,14 @@ function Body({ view, device }: { view: RankingsView; device: string }) {
           : ""}
       </p>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[26rem] text-sm">
           <caption className="sr-only">
             Keywords by position band, {device}
           </caption>
           <thead>
             <tr className="border-b border-border text-left text-xs text-muted-foreground">
               <th className="py-1.5 pr-3 font-medium">Position band</th>
-              <th className="py-1.5 pr-3 text-right font-medium">Keywords</th>
+              <th className="whitespace-nowrap py-1.5 pr-3 text-right font-medium">Keywords</th>
               <th className="py-1.5 font-medium">Change vs previous run</th>
             </tr>
           </thead>

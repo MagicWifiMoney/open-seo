@@ -1,4 +1,4 @@
-import { Area, AreaChart, ReferenceLine } from "recharts";
+import { Area, AreaChart, ReferenceLine, usePlotArea } from "recharts";
 import {
   ChartGrid,
   ChartXAxis,
@@ -22,6 +22,32 @@ import {
   METRIC_LABELS,
 } from "./trafficFormat";
 import { metricField, type Bucket } from "./trafficMath";
+
+/** Launch marker label. Sits right of the line, and flips to its left once the
+ *  line is past the middle of the plot, so the text never leaves the chart. */
+function LaunchLabel({
+  text,
+  viewBox,
+}: {
+  text: string;
+  viewBox?: { x?: number; y?: number };
+}) {
+  const plot = usePlotArea();
+  const x = viewBox?.x ?? 0;
+  const y = viewBox?.y ?? 0;
+  const flip = plot ? x > plot.x + plot.width / 2 : false;
+  return (
+    <text
+      x={flip ? x - 4 : x + 4}
+      y={y + 12}
+      textAnchor={flip ? "end" : "start"}
+      fontSize={11}
+      fill="var(--color-destructive)"
+    >
+      {text}
+    </text>
+  );
+}
 
 export function TrafficChart({
   buckets,
@@ -115,12 +141,7 @@ export function TrafficChart({
               x={launchKey}
               stroke="var(--color-destructive)"
               strokeWidth={1.5}
-              label={{
-                value: `Launch ${formatDay(launch)}`,
-                position: "insideTopRight",
-                fontSize: 11,
-                fill: "var(--color-destructive)",
-              }}
+              label={<LaunchLabel text={`Launch ${formatDay(launch)}`} />}
             />
           ) : null}
         </AreaChart>
