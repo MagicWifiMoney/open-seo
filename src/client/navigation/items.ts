@@ -1,4 +1,5 @@
 import {
+  Activity,
   Bookmark,
   Bot,
   Brain,
@@ -7,6 +8,7 @@ import {
   FileText,
   Globe,
   LayoutDashboard,
+  LayoutGrid,
   Link2,
   MessageSquare,
   Search,
@@ -18,11 +20,16 @@ import { GoogleGlyphMuted } from "@/client/features/gsc/GoogleGlyph";
 const projectNavItems = [
   {
     to: "/p/$projectId" as const,
-    label: "Dashboard",
+    label: "Overview",
     icon: LayoutDashboard,
     // Without exact matching, the index path is a prefix of every project
     // route and the Dashboard item would render active everywhere.
     activeOptions: { exact: true, includeSearch: false },
+  },
+  {
+    to: "/p/$projectId/dashboard" as const,
+    label: "Classic Dashboard",
+    icon: LayoutGrid,
   },
   {
     to: "/p/$projectId/keywords" as const,
@@ -43,6 +50,11 @@ const projectNavItems = [
     to: "/p/$projectId/search-performance" as const,
     label: "GSC Insights",
     icon: GoogleGlyphMuted,
+  },
+  {
+    to: "/p/$projectId/traffic" as const,
+    label: "Traffic",
+    icon: Activity,
   },
   {
     to: "/p/$projectId/domain" as const,
@@ -144,6 +156,7 @@ export function getProjectNavGroups(projectId: string) {
       label: "My Site",
       items: [
         byPath("/p/$projectId/search-performance"),
+        byPath("/p/$projectId/traffic"),
         byPath("/p/$projectId/rank-tracking"),
         byPath("/p/$projectId/saved"),
         byPath("/p/$projectId/audit"),

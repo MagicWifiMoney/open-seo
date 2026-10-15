@@ -45,7 +45,7 @@ export function DashboardLinkActivity({
           }
           action={
             <Link
-              to="/p/$projectId"
+              to="/p/$projectId/dashboard"
               params={{ projectId }}
               search={{ tab: "backlinks" }}
               className={moreDetailsClass}
@@ -111,7 +111,7 @@ export function DashboardLinkActivity({
                 Explore the sites already linking to you.
               </p>
               <Link
-                to="/p/$projectId"
+                to="/p/$projectId/dashboard"
                 params={{ projectId }}
                 search={{ tab: "backlinks" }}
                 className="text-sm text-primary hover:underline"

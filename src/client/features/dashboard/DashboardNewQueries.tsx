@@ -56,7 +56,7 @@ export function DashboardNewQueries({
             }
             action={
               <Link
-                to="/p/$projectId"
+                to="/p/$projectId/dashboard"
                 params={{ projectId }}
                 search={{ tab: "keywords" }}
                 className={moreDetailsClass}

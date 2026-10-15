@@ -1,22 +1,39 @@
-import { dashboardSearchSchema } from "@/types/schemas/dashboard";
-import { createFileRoute } from "@tanstack/react-router";
-import { DashboardPage } from "@/client/features/dashboard/DashboardPage";
+import {
+  createFileRoute,
+  stripSearchParams,
+  useNavigate,
+} from "@tanstack/react-router";
+import { OverviewPage } from "@/client/features/overview/OverviewPage";
+import {
+  OVERVIEW_SEARCH_DEFAULTS,
+  overviewSearchSchema,
+} from "@/types/schemas/overview";
 
+// The project home is the Quiet Coyote Overview. The stock dashboard is still
+// reachable at /p/$projectId/dashboard.
 export const Route = createFileRoute("/_app/p/$projectId/")({
-  validateSearch: dashboardSearchSchema,
-  component: DashboardRoute,
+  validateSearch: overviewSearchSchema,
+  search: {
+    middlewares: [stripSearchParams(OVERVIEW_SEARCH_DEFAULTS)],
+  },
+  component: OverviewRoute,
 });
 
-function DashboardRoute() {
+function OverviewRoute() {
   const { projectId } = Route.useParams();
+  const navigate = useNavigate({ from: Route.fullPath });
   const search = Route.useSearch();
-  const navigate = Route.useNavigate();
   return (
-    <DashboardPage
+    <OverviewPage
       key={projectId}
       projectId={projectId}
-      tab={search.tab}
-      onTabChange={(tab) => void navigate({ search: { tab } })}
+      search={search}
+      onSearchChange={(update) => {
+        void navigate({
+          search: (prev) => ({ ...prev, ...update }),
+          replace: true,
+        });
+      }}
     />
   );
 }

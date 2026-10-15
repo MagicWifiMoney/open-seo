@@ -48,6 +48,7 @@ import { Route as AppPProjectIdAiVisibilityRouteImport } from './routes/_app/p/$
 import { Route as AppPProjectIdBacklinksRouteImport } from './routes/_app/p/$projectId/backlinks'
 import { Route as AppPProjectIdBrandLookupRouteImport } from './routes/_app/p/$projectId/brand-lookup'
 import { Route as AppPProjectIdContextRouteImport } from './routes/_app/p/$projectId/context'
+import { Route as AppPProjectIdDashboardRouteImport } from './routes/_app/p/$projectId/dashboard'
 import { Route as AppPProjectIdDomainRouteImport } from './routes/_app/p/$projectId/domain'
 import { Route as AppPProjectIdKeywordsRouteImport } from './routes/_app/p/$projectId/keywords'
 import { Route as AppPProjectIdPromptExplorerRouteImport } from './routes/_app/p/$projectId/prompt-explorer'
@@ -56,6 +57,7 @@ import { Route as AppPProjectIdSamRouteImport } from './routes/_app/p/$projectId
 import { Route as AppPProjectIdSavedRouteImport } from './routes/_app/p/$projectId/saved'
 import { Route as AppPProjectIdSearchPerformanceRouteImport } from './routes/_app/p/$projectId/search-performance'
 import { Route as AppPProjectIdSettingsRouteImport } from './routes/_app/p/$projectId/settings'
+import { Route as AppPProjectIdTrafficRouteImport } from './routes/_app/p/$projectId/traffic'
 import { Route as ApiGa4OauthCallbackRouteImport } from './routes/api/ga4/oauth/callback'
 import { Route as ApiGscOauthCallbackRouteImport } from './routes/api/gsc/oauth/callback'
 import { Route as AppPProjectIdAiVisibilityIndexRouteImport } from './routes/_app/p/$projectId/ai-visibility/index'
@@ -269,6 +271,11 @@ const AppPProjectIdContextRoute = AppPProjectIdContextRouteImport.update({
   path: '/context',
   getParentRoute: () => AppPProjectIdRouteRoute,
 } as any)
+const AppPProjectIdDashboardRoute = AppPProjectIdDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppPProjectIdRouteRoute,
+} as any)
 const AppPProjectIdDomainRoute = AppPProjectIdDomainRouteImport.update({
   id: '/domain',
   path: '/domain',
@@ -310,6 +317,11 @@ const AppPProjectIdSearchPerformanceRoute =
 const AppPProjectIdSettingsRoute = AppPProjectIdSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AppPProjectIdRouteRoute,
+} as any)
+const AppPProjectIdTrafficRoute = AppPProjectIdTrafficRouteImport.update({
+  id: '/traffic',
+  path: '/traffic',
   getParentRoute: () => AppPProjectIdRouteRoute,
 } as any)
 const ApiGa4OauthCallbackRoute = ApiGa4OauthCallbackRouteImport.update({
@@ -436,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/p/$projectId/backlinks': typeof AppPProjectIdBacklinksRoute
   '/p/$projectId/brand-lookup': typeof AppPProjectIdBrandLookupRoute
   '/p/$projectId/context': typeof AppPProjectIdContextRoute
+  '/p/$projectId/dashboard': typeof AppPProjectIdDashboardRoute
   '/p/$projectId/domain': typeof AppPProjectIdDomainRoute
   '/p/$projectId/keywords': typeof AppPProjectIdKeywordsRoute
   '/p/$projectId/prompt-explorer': typeof AppPProjectIdPromptExplorerRoute
@@ -444,6 +457,7 @@ export interface FileRoutesByFullPath {
   '/p/$projectId/saved': typeof AppPProjectIdSavedRoute
   '/p/$projectId/search-performance': typeof AppPProjectIdSearchPerformanceRoute
   '/p/$projectId/settings': typeof AppPProjectIdSettingsRouteWithChildren
+  '/p/$projectId/traffic': typeof AppPProjectIdTrafficRoute
   '/api/ga4/oauth/callback': typeof ApiGa4OauthCallbackRoute
   '/api/gsc/oauth/callback': typeof ApiGscOauthCallbackRoute
   '/p/$projectId/': typeof AppPProjectIdIndexRoute
@@ -494,12 +508,14 @@ export interface FileRoutesByTo {
   '/p/$projectId/backlinks': typeof AppPProjectIdBacklinksRoute
   '/p/$projectId/brand-lookup': typeof AppPProjectIdBrandLookupRoute
   '/p/$projectId/context': typeof AppPProjectIdContextRoute
+  '/p/$projectId/dashboard': typeof AppPProjectIdDashboardRoute
   '/p/$projectId/domain': typeof AppPProjectIdDomainRoute
   '/p/$projectId/keywords': typeof AppPProjectIdKeywordsRoute
   '/p/$projectId/prompt-explorer': typeof AppPProjectIdPromptExplorerRoute
   '/p/$projectId/sam': typeof AppPProjectIdSamRoute
   '/p/$projectId/saved': typeof AppPProjectIdSavedRoute
   '/p/$projectId/search-performance': typeof AppPProjectIdSearchPerformanceRoute
+  '/p/$projectId/traffic': typeof AppPProjectIdTrafficRoute
   '/api/ga4/oauth/callback': typeof ApiGa4OauthCallbackRoute
   '/api/gsc/oauth/callback': typeof ApiGscOauthCallbackRoute
   '/p/$projectId': typeof AppPProjectIdIndexRoute
@@ -557,6 +573,7 @@ export interface FileRoutesById {
   '/_app/p/$projectId/backlinks': typeof AppPProjectIdBacklinksRoute
   '/_app/p/$projectId/brand-lookup': typeof AppPProjectIdBrandLookupRoute
   '/_app/p/$projectId/context': typeof AppPProjectIdContextRoute
+  '/_app/p/$projectId/dashboard': typeof AppPProjectIdDashboardRoute
   '/_app/p/$projectId/domain': typeof AppPProjectIdDomainRoute
   '/_app/p/$projectId/keywords': typeof AppPProjectIdKeywordsRoute
   '/_app/p/$projectId/prompt-explorer': typeof AppPProjectIdPromptExplorerRoute
@@ -565,6 +582,7 @@ export interface FileRoutesById {
   '/_app/p/$projectId/saved': typeof AppPProjectIdSavedRoute
   '/_app/p/$projectId/search-performance': typeof AppPProjectIdSearchPerformanceRoute
   '/_app/p/$projectId/settings': typeof AppPProjectIdSettingsRouteWithChildren
+  '/_app/p/$projectId/traffic': typeof AppPProjectIdTrafficRoute
   '/api/ga4/oauth/callback': typeof ApiGa4OauthCallbackRoute
   '/api/gsc/oauth/callback': typeof ApiGscOauthCallbackRoute
   '/_app/p/$projectId/': typeof AppPProjectIdIndexRoute
@@ -620,6 +638,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/backlinks'
     | '/p/$projectId/brand-lookup'
     | '/p/$projectId/context'
+    | '/p/$projectId/dashboard'
     | '/p/$projectId/domain'
     | '/p/$projectId/keywords'
     | '/p/$projectId/prompt-explorer'
@@ -628,6 +647,7 @@ export interface FileRouteTypes {
     | '/p/$projectId/saved'
     | '/p/$projectId/search-performance'
     | '/p/$projectId/settings'
+    | '/p/$projectId/traffic'
     | '/api/ga4/oauth/callback'
     | '/api/gsc/oauth/callback'
     | '/p/$projectId/'
@@ -678,12 +698,14 @@ export interface FileRouteTypes {
     | '/p/$projectId/backlinks'
     | '/p/$projectId/brand-lookup'
     | '/p/$projectId/context'
+    | '/p/$projectId/dashboard'
     | '/p/$projectId/domain'
     | '/p/$projectId/keywords'
     | '/p/$projectId/prompt-explorer'
     | '/p/$projectId/sam'
     | '/p/$projectId/saved'
     | '/p/$projectId/search-performance'
+    | '/p/$projectId/traffic'
     | '/api/ga4/oauth/callback'
     | '/api/gsc/oauth/callback'
     | '/p/$projectId'
@@ -740,6 +762,7 @@ export interface FileRouteTypes {
     | '/_app/p/$projectId/backlinks'
     | '/_app/p/$projectId/brand-lookup'
     | '/_app/p/$projectId/context'
+    | '/_app/p/$projectId/dashboard'
     | '/_app/p/$projectId/domain'
     | '/_app/p/$projectId/keywords'
     | '/_app/p/$projectId/prompt-explorer'
@@ -748,6 +771,7 @@ export interface FileRouteTypes {
     | '/_app/p/$projectId/saved'
     | '/_app/p/$projectId/search-performance'
     | '/_app/p/$projectId/settings'
+    | '/_app/p/$projectId/traffic'
     | '/api/ga4/oauth/callback'
     | '/api/gsc/oauth/callback'
     | '/_app/p/$projectId/'
@@ -1062,6 +1086,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPProjectIdContextRouteImport
       parentRoute: typeof AppPProjectIdRouteRoute
     }
+    '/_app/p/$projectId/dashboard': {
+      id: '/_app/p/$projectId/dashboard'
+      path: '/dashboard'
+      fullPath: '/p/$projectId/dashboard'
+      preLoaderRoute: typeof AppPProjectIdDashboardRouteImport
+      parentRoute: typeof AppPProjectIdRouteRoute
+    }
     '/_app/p/$projectId/domain': {
       id: '/_app/p/$projectId/domain'
       path: '/domain'
@@ -1116,6 +1147,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/p/$projectId/settings'
       preLoaderRoute: typeof AppPProjectIdSettingsRouteImport
+      parentRoute: typeof AppPProjectIdRouteRoute
+    }
+    '/_app/p/$projectId/traffic': {
+      id: '/_app/p/$projectId/traffic'
+      path: '/traffic'
+      fullPath: '/p/$projectId/traffic'
+      preLoaderRoute: typeof AppPProjectIdTrafficRouteImport
       parentRoute: typeof AppPProjectIdRouteRoute
     }
     '/api/ga4/oauth/callback': {
@@ -1300,6 +1338,7 @@ interface AppPProjectIdRouteRouteChildren {
   AppPProjectIdBacklinksRoute: typeof AppPProjectIdBacklinksRoute
   AppPProjectIdBrandLookupRoute: typeof AppPProjectIdBrandLookupRoute
   AppPProjectIdContextRoute: typeof AppPProjectIdContextRoute
+  AppPProjectIdDashboardRoute: typeof AppPProjectIdDashboardRoute
   AppPProjectIdDomainRoute: typeof AppPProjectIdDomainRoute
   AppPProjectIdKeywordsRoute: typeof AppPProjectIdKeywordsRoute
   AppPProjectIdPromptExplorerRoute: typeof AppPProjectIdPromptExplorerRoute
@@ -1308,6 +1347,7 @@ interface AppPProjectIdRouteRouteChildren {
   AppPProjectIdSavedRoute: typeof AppPProjectIdSavedRoute
   AppPProjectIdSearchPerformanceRoute: typeof AppPProjectIdSearchPerformanceRoute
   AppPProjectIdSettingsRoute: typeof AppPProjectIdSettingsRouteWithChildren
+  AppPProjectIdTrafficRoute: typeof AppPProjectIdTrafficRoute
   AppPProjectIdIndexRoute: typeof AppPProjectIdIndexRoute
   AppPProjectIdReportsReportIdRoute: typeof AppPProjectIdReportsReportIdRoute
   AppPProjectIdReportsTemplatesRoute: typeof AppPProjectIdReportsTemplatesRoute
@@ -1321,6 +1361,7 @@ const AppPProjectIdRouteRouteChildren: AppPProjectIdRouteRouteChildren = {
   AppPProjectIdBacklinksRoute: AppPProjectIdBacklinksRoute,
   AppPProjectIdBrandLookupRoute: AppPProjectIdBrandLookupRoute,
   AppPProjectIdContextRoute: AppPProjectIdContextRoute,
+  AppPProjectIdDashboardRoute: AppPProjectIdDashboardRoute,
   AppPProjectIdDomainRoute: AppPProjectIdDomainRoute,
   AppPProjectIdKeywordsRoute: AppPProjectIdKeywordsRoute,
   AppPProjectIdPromptExplorerRoute: AppPProjectIdPromptExplorerRoute,
@@ -1329,6 +1370,7 @@ const AppPProjectIdRouteRouteChildren: AppPProjectIdRouteRouteChildren = {
   AppPProjectIdSavedRoute: AppPProjectIdSavedRoute,
   AppPProjectIdSearchPerformanceRoute: AppPProjectIdSearchPerformanceRoute,
   AppPProjectIdSettingsRoute: AppPProjectIdSettingsRouteWithChildren,
+  AppPProjectIdTrafficRoute: AppPProjectIdTrafficRoute,
   AppPProjectIdIndexRoute: AppPProjectIdIndexRoute,
   AppPProjectIdReportsReportIdRoute: AppPProjectIdReportsReportIdRoute,
   AppPProjectIdReportsTemplatesRoute: AppPProjectIdReportsTemplatesRoute,
