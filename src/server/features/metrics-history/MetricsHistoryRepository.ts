@@ -63,15 +63,20 @@ export type IngestStatePatch = {
   lastError?: string | null;
 };
 
-// D1 caps bound parameters at ~100 per statement. Each inserted row binds one
-// parameter per column, so rows per statement = floor(100 / columns).
-const D1_PARAM_LIMIT = 100;
+// D1 rejects a statement with 100 or more bound parameters ("too many SQL
+// variables", seen live on the miller-ingest stage 2026-10-16). Each inserted
+// row binds one parameter per column, and the GSC conflict clause binds one
+// more (fetchedAt), so size statements against a budget below the limit.
+export const D1_PARAM_LIMIT = 100;
+const D1_PARAM_BUDGET = 90;
 // projectId, date, fetchedAt, then the row's own columns.
-const COMMON_PARAMS = 3;
-// Rows per statement: GSC site 9 params -> 11, page 8 -> 12, query/page 10 -> 10,
-// GA4 total 7 -> 14, channel 8 -> 12, landing page 8 -> 12, key event 7 -> 14.
-const rowsPerStatement = (ownColumns: number) =>
-  Math.floor(D1_PARAM_LIMIT / (COMMON_PARAMS + ownColumns));
+export const COMMON_PARAMS = 3;
+// Bound by the conflict clause on top of the row values.
+export const CONFLICT_PARAMS = 1;
+// Rows per statement: GSC site 9 params -> 10, page 8 -> 11, query/page 10 -> 9,
+// GA4 total 7 -> 12, channel 8 -> 11, landing page 8 -> 11, key event 7 -> 12.
+export const rowsPerStatement = (ownColumns: number) =>
+  Math.floor(D1_PARAM_BUDGET / (COMMON_PARAMS + ownColumns));
 
 // Splits rows into param-safe statements and runs them in bounded batches.
 async function insertChunked<T>(

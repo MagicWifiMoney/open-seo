@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MetricsHistoryRepository as repo } from "./MetricsHistoryRepository";
+import {
+  COMMON_PARAMS,
+  CONFLICT_PARAMS,
+  D1_PARAM_LIMIT,
+  MetricsHistoryRepository as repo,
+  rowsPerStatement,
+} from "./MetricsHistoryRepository";
 
 const { testDb } = await vi.hoisted(async () => {
   const { createMetricsHistoryTestDb } = await import("./metricsHistoryTestDb");
@@ -132,5 +138,18 @@ describe("coverage", () => {
     expect(c.ga4).toEqual({ minDate: "2026-01-05", maxDate: "2026-01-09" });
     expect(c.rowCounts.gscDailySite).toBe(3);
     expect(c.rowCounts.ga4DailyTotal).toBe(2);
+  });
+});
+
+describe("rowsPerStatement", () => {
+  it("keeps every table's statement under D1's bound-parameter limit", () => {
+    // own columns per table: GSC site 6, page 5, query/page 7; GA4 total 4,
+    // channel 5, landing page 5, key event 4.
+    for (const own of [6, 5, 7, 4, 5, 5, 4]) {
+      const perRow = COMMON_PARAMS + own;
+      const bound = rowsPerStatement(own) * perRow + CONFLICT_PARAMS;
+      expect(rowsPerStatement(own)).toBeGreaterThan(0);
+      expect(bound).toBeLessThan(D1_PARAM_LIMIT);
+    }
   });
 });
