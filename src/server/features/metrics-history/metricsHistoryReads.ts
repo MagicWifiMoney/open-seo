@@ -174,8 +174,89 @@ async function getGa4KeyEvent(projectId: string, start: string, end: string) {
     .orderBy(asc(ga4DailyKeyEvent.date));
 }
 
+/** Per-query totals over a window, summed across pages and devices. Position
+ *  is impression-weighted; queries with no impressions are skipped. */
+async function getGscQueryTotals(
+  projectId: string,
+  start: string,
+  end: string,
+  options: { finalizedOnly: boolean },
+) {
+  const impressions = sql<number>`sum(${gscDailyQueryPage.impressions})`;
+  const clicks = sql<number>`sum(${gscDailyQueryPage.clicks})`;
+  const rows = await db
+    .select({
+      query: gscDailyQueryPage.query,
+      clicks,
+      impressions,
+      position: sql<number>`sum(${gscDailyQueryPage.position} * ${gscDailyQueryPage.impressions}) * 1.0 / sum(${gscDailyQueryPage.impressions})`,
+    })
+    .from(gscDailyQueryPage)
+    .where(
+      and(
+        inRange(gscDailyQueryPage, projectId, start, end),
+        options.finalizedOnly
+          ? eq(gscDailyQueryPage.finalized, true)
+          : undefined,
+      ),
+    )
+    .groupBy(gscDailyQueryPage.query)
+    .having(sql`sum(${gscDailyQueryPage.impressions}) > 0`)
+    .orderBy(desc(clicks), desc(impressions));
+  return rows.map((row) => ({
+    query: row.query,
+    clicks: Number(row.clicks),
+    impressions: Number(row.impressions),
+    position: Number(row.position),
+  }));
+}
+
+/**
+ * Latest stored all-device site day, or null. Gates the dashboard's stored
+ * path: rows are refreshed daily for the trailing window, so coverage through
+ * the window end is what matters, not the 5-day finalized flag (the dashboard
+ * window ends 3 days back, so a finalized-only gate would never open).
+ */
+async function getGscCoverageEnd(projectId: string) {
+  const [row] = await db
+    .select({ date: max(gscDailySite.date) })
+    .from(gscDailySite)
+    .where(
+      and(eq(gscDailySite.projectId, projectId), eq(gscDailySite.device, "")),
+    );
+  return row?.date ?? null;
+}
+
+/** Latest day whose all-device site row is final, or null. */
+async function getGscFinalizedThrough(projectId: string) {
+  const [row] = await db
+    .select({ date: max(gscDailySite.date) })
+    .from(gscDailySite)
+    .where(
+      and(
+        eq(gscDailySite.projectId, projectId),
+        eq(gscDailySite.device, ""),
+        eq(gscDailySite.finalized, true),
+      ),
+    );
+  return row?.date ?? null;
+}
+
+/** Latest day with a stored GA4 total row, or null. */
+async function getGa4CoverageEnd(projectId: string) {
+  const [row] = await db
+    .select({ date: max(ga4DailyTotal.date) })
+    .from(ga4DailyTotal)
+    .where(eq(ga4DailyTotal.projectId, projectId));
+  return row?.date ?? null;
+}
+
 export const metricsHistoryReads = {
   coverage,
+  getGscQueryTotals,
+  getGscCoverageEnd,
+  getGscFinalizedThrough,
+  getGa4CoverageEnd,
   getGscSite,
   getGscPage,
   getGscQueryPage,

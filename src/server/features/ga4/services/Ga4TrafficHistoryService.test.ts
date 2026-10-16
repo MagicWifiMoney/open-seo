@@ -1,14 +1,31 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  getConnection: vi.fn(),
+  runReport: vi.fn(),
+  coverageEnd: vi.fn(),
+  getTotal: vi.fn(),
+  getChannel: vi.fn(),
+}));
 
 vi.mock("@/server/features/ga4/repositories/Ga4ConnectionRepository", () => ({
-  Ga4ConnectionRepository: { getByProjectId: vi.fn() },
+  Ga4ConnectionRepository: { getByProjectId: mocks.getConnection },
 }));
 
 vi.mock("@/server/lib/ga4Client", () => ({
-  createGa4DataClient: () => ({ runReport: vi.fn() }),
+  createGa4DataClient: () => ({ runReport: mocks.runReport }),
+}));
+
+vi.mock("@/server/features/metrics-history/MetricsHistoryRepository", () => ({
+  MetricsHistoryRepository: {
+    getGa4CoverageEnd: mocks.coverageEnd,
+    getGa4Total: mocks.getTotal,
+    getGa4Channel: mocks.getChannel,
+  },
 }));
 
 import {
+  Ga4TrafficHistoryService,
   buildTrafficHistoryRequest,
   rowsToDays,
   toIsoDate,
@@ -47,5 +64,90 @@ describe("Ga4TrafficHistoryService helpers", () => {
         stringFilter: { matchType: "EXACT", value: "Organic Search" },
       },
     });
+  });
+});
+
+const metrics = (date: string, sessions: number) => ({
+  date,
+  sessions,
+  activeUsers: sessions - 1,
+  engagedSessions: 0,
+  keyEvents: 2,
+});
+
+describe("Ga4TrafficHistoryService.getHistory stored path", () => {
+  const now = new Date("2026-10-16T12:00:00Z");
+  beforeEach(() => {
+    for (const mock of Object.values(mocks)) mock.mockReset();
+    mocks.getConnection.mockResolvedValue({
+      projectId: "p",
+      connectedByUserId: "u",
+      ga4AccountId: "a",
+      propertyId: "1",
+      propertyDisplayName: "Prop",
+      propertyTimeZone: "UTC",
+    });
+  });
+
+  it("serves the all-channel view from stored totals without calling GA4", async () => {
+    mocks.coverageEnd.mockResolvedValue("2026-10-15");
+    mocks.getTotal.mockResolvedValue([
+      metrics("2026-10-01", 5),
+      metrics("2026-10-02", 7),
+    ]);
+    const result = await Ga4TrafficHistoryService.getHistory(
+      { projectId: "p", channel: "all" },
+      { now },
+    );
+    expect(mocks.runReport).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      connected: true,
+      propertyDisplayName: "Prop",
+      propertyTimeZone: "UTC",
+      channel: "all",
+      dataStart: "2026-10-01",
+      dataEnd: "2026-10-02",
+      days: [
+        { date: "2026-10-01", sessions: 5, users: 4, keyEvents: 2 },
+        { date: "2026-10-02", sessions: 7, users: 6, keyEvents: 2 },
+      ],
+      hasLimitedData: false,
+      truncated: false,
+    });
+  });
+
+  it("filters stored channel rows to the requested channel group", async () => {
+    mocks.coverageEnd.mockResolvedValue("2026-10-15");
+    mocks.getChannel.mockResolvedValue([
+      { ...metrics("2026-10-01", 3), channelGroup: "Organic Search" },
+      { ...metrics("2026-10-01", 9), channelGroup: "Direct" },
+    ]);
+    const result = await Ga4TrafficHistoryService.getHistory(
+      { projectId: "p", channel: "organic_search" },
+      { now },
+    );
+    expect(result?.days).toEqual([
+      { date: "2026-10-01", sessions: 3, users: 2, keyEvents: 2 },
+    ]);
+    expect(mocks.runReport).not.toHaveBeenCalled();
+  });
+
+  it("falls back to GA4 when stored coverage is missing or behind", async () => {
+    for (const end of [null, "2026-10-01"]) {
+      mocks.coverageEnd.mockResolvedValue(end);
+      mocks.runReport.mockResolvedValue({
+        dimensionHeaders: [{ name: "date" }],
+        metricHeaders: [],
+        rows: [],
+        rowCount: 0,
+      });
+      await Ga4TrafficHistoryService.getHistory(
+        { projectId: "p", channel: "all" },
+        { now },
+      ).catch(() => undefined);
+      expect(mocks.runReport).toHaveBeenCalled();
+      mocks.runReport.mockClear();
+    }
+    expect(mocks.getTotal).not.toHaveBeenCalled();
   });
 });

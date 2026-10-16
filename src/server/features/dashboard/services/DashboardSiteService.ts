@@ -18,6 +18,7 @@ import {
 } from "@/server/features/gsc/services/GscService";
 import { GscConnectionRepository } from "@/server/features/gsc/repositories/GscConnectionRepository";
 import { resolveDateRange } from "@/server/features/gsc/searchAnalytics";
+import { MetricsHistoryRepository } from "@/server/features/metrics-history/MetricsHistoryRepository";
 
 const querySchema = z.object({
   query: z.string(),
@@ -32,6 +33,7 @@ const queriesSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
   baselineStartDate: z.string(),
+  source: z.enum(["stored", "live"]).optional(),
 });
 
 async function getBacklinks(
@@ -104,9 +106,27 @@ async function getKeywords(projectId: string, organizationId: string) {
       rows: z.array(querySchema),
       startDate: z.string(),
       endDate: z.string(),
+      source: z.enum(["stored", "live"]).optional(),
     }),
     maxAgeMs: 86400_000,
     load: async () => {
+      const coverageEnd =
+        await MetricsHistoryRepository.getGscCoverageEnd(projectId);
+      if (coverageEnd && coverageEnd >= endDate) {
+        const rows = await MetricsHistoryRepository.getGscQueryTotals(
+          projectId,
+          startDate,
+          endDate,
+          { finalizedOnly: false },
+        );
+        return {
+          connected: true,
+          rows,
+          startDate,
+          endDate,
+          source: "stored" as const,
+        };
+      }
       try {
         const result = await GscService.getPerformance({
           projectId,
@@ -128,6 +148,7 @@ async function getKeywords(projectId: string, organizationId: string) {
             })),
           startDate,
           endDate,
+          source: "live" as const,
         };
       } catch (error) {
         if (
@@ -181,6 +202,38 @@ async function getEmergingQueries(projectId: string, organizationId: string) {
     schema: queriesSchema,
     maxAgeMs: 86400_000,
     load: async () => {
+      const coverageEnd =
+        await MetricsHistoryRepository.getGscCoverageEnd(projectId);
+      if (coverageEnd && coverageEnd >= endDate) {
+        const [recent, baseline] = await Promise.all([
+          MetricsHistoryRepository.getGscQueryTotals(
+            projectId,
+            startDate,
+            endDate,
+            { finalizedOnly: false },
+          ),
+          MetricsHistoryRepository.getGscQueryTotals(
+            projectId,
+            baselineStartDate,
+            baselineEndDate,
+            { finalizedOnly: false },
+          ),
+        ]);
+        const seen = new Set(baseline.map((row) => row.query));
+        const rows = sort(
+          recent.filter((row) => row.impressions >= 10 && !seen.has(row.query)),
+          (a, b) => b.impressions - a.impressions,
+        ).slice(0, 25);
+        return {
+          connected: true,
+          hasSearchData: recent.length > 0,
+          rows,
+          startDate,
+          endDate,
+          baselineStartDate,
+          source: "stored" as const,
+        };
+      }
       try {
         const [recent, baseline] = await Promise.all([
           GscService.getPerformance({
@@ -258,6 +311,7 @@ async function getEmergingQueries(projectId: string, organizationId: string) {
           startDate,
           endDate,
           baselineStartDate,
+          source: "live" as const,
         };
       } catch (error) {
         if (

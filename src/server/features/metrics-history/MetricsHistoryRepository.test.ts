@@ -141,6 +141,141 @@ describe("coverage", () => {
   });
 });
 
+const qp = (
+  date: string,
+  query: string,
+  extra: {
+    device: string;
+    clicks: number;
+    impressions: number;
+    position: number;
+    finalized?: boolean;
+  },
+) => ({ date, query, page: "/1", ctr: 0, finalized: true, ...extra });
+
+describe("query totals and coverage ends", () => {
+  it("sums per query across pages, devices and dates with weighted position", async () => {
+    await repo.upsertGscQueryPage(P, [
+      {
+        ...qp("2026-01-01", "a", {
+          device: "MOBILE",
+          clicks: 2,
+          impressions: 10,
+          position: 2,
+        }),
+        page: "/1",
+      },
+      {
+        ...qp("2026-01-01", "a", {
+          device: "DESKTOP",
+          clicks: 3,
+          impressions: 30,
+          position: 6,
+        }),
+        page: "/2",
+      },
+      {
+        ...qp("2026-01-02", "a", {
+          device: "MOBILE",
+          clicks: 1,
+          impressions: 10,
+          position: 4,
+        }),
+        page: "/1",
+      },
+      {
+        ...qp("2026-01-02", "b", {
+          device: "MOBILE",
+          clicks: 9,
+          impressions: 20,
+          position: 1,
+        }),
+        page: "/1",
+      },
+      {
+        ...qp("2026-01-02", "zero", {
+          device: "MOBILE",
+          clicks: 0,
+          impressions: 0,
+          position: 0,
+        }),
+        page: "/1",
+      },
+      {
+        ...qp("2026-01-09", "out", {
+          device: "MOBILE",
+          clicks: 5,
+          impressions: 5,
+          position: 1,
+        }),
+        page: "/1",
+      },
+    ]);
+    const rows = await repo.getGscQueryTotals(P, "2026-01-01", "2026-01-02", {
+      finalizedOnly: true,
+    });
+    expect(rows.map((r) => r.query)).toEqual(["b", "a"]);
+    expect(rows[0]).toEqual({
+      query: "b",
+      clicks: 9,
+      impressions: 20,
+      position: 1,
+    });
+    // (2*10 + 6*30 + 4*10) / 50 = 4.8
+    expect(rows[1]).toMatchObject({ clicks: 6, impressions: 50 });
+    expect(rows[1]?.position).toBeCloseTo(4.8);
+  });
+
+  it("finalizedOnly excludes non-finalized rows", async () => {
+    await repo.upsertGscQueryPage(P, [
+      {
+        ...qp("2026-01-01", "a", {
+          device: "MOBILE",
+          clicks: 2,
+          impressions: 10,
+          position: 2,
+        }),
+        page: "/1",
+      },
+      {
+        ...qp("2026-01-02", "a", {
+          device: "MOBILE",
+          clicks: 8,
+          impressions: 10,
+          position: 4,
+          finalized: false,
+        }),
+        page: "/1",
+      },
+    ]);
+    const window = ["2026-01-01", "2026-01-02"] as const;
+    const final = await repo.getGscQueryTotals(P, ...window, {
+      finalizedOnly: true,
+    });
+    expect(final[0]).toMatchObject({ clicks: 2, impressions: 10 });
+    const all = await repo.getGscQueryTotals(P, ...window, {
+      finalizedOnly: false,
+    });
+    expect(all[0]).toMatchObject({ clicks: 10, impressions: 20 });
+  });
+
+  it("reports finalized-through and GA4 end, or null when empty", async () => {
+    expect(await repo.getGscFinalizedThrough(P)).toBeNull();
+    expect(await repo.getGa4CoverageEnd(P)).toBeNull();
+    await repo.upsertGscSite(P, [
+      site("2026-01-01", 1, true),
+      site("2026-01-02", 1, true),
+      site("2026-01-03", 1, false),
+    ]);
+    await repo.upsertGa4Total(P, [
+      total("2026-01-05", 1),
+      total("2026-01-09", 1),
+    ]);
+    expect(await repo.getGscFinalizedThrough(P)).toBe("2026-01-02");
+    expect(await repo.getGa4CoverageEnd(P)).toBe("2026-01-09");
+  });
+});
+
 describe("rowsPerStatement", () => {
   it("keeps every table's statement under D1's bound-parameter limit", () => {
     // own columns per table: GSC site 6, page 5, query/page 7; GA4 total 4,

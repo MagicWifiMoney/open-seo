@@ -8,6 +8,8 @@ import {
   TRAFFIC_CHANNEL_GROUP_NAMES,
   type TrafficChannel,
 } from "@/types/schemas/traffic";
+import { MetricsHistoryRepository } from "@/server/features/metrics-history/MetricsHistoryRepository";
+import { shiftDate } from "@/server/features/metrics-history/ingestDates";
 import { normalizeGa4Response } from "./Ga4ReportNormalization";
 import { mapGa4ReportError, resolveGa4DateRange } from "./Ga4ReportingService";
 
@@ -84,6 +86,41 @@ export function rowsToDays(
   return days;
 }
 
+function toDay(row: {
+  date: string;
+  sessions: number;
+  activeUsers: number;
+  keyEvents: number;
+}): TrafficHistoryDay {
+  return {
+    date: row.date,
+    sessions: row.sessions,
+    users: row.activeUsers,
+    keyEvents: row.keyEvents,
+  };
+}
+
+async function getStoredDays(
+  input: { projectId: string; channel: TrafficChannel },
+  endDate: string,
+): Promise<TrafficHistoryDay[]> {
+  if (input.channel === "all") {
+    const rows = await MetricsHistoryRepository.getGa4Total(
+      input.projectId,
+      GA4_HISTORY_FLOOR,
+      endDate,
+    );
+    return rows.map(toDay);
+  }
+  const group = TRAFFIC_CHANNEL_GROUP_NAMES[input.channel];
+  const rows = await MetricsHistoryRepository.getGa4Channel(
+    input.projectId,
+    GA4_HISTORY_FLOOR,
+    endDate,
+  );
+  return rows.filter((row) => row.channelGroup === group).map(toDay);
+}
+
 /** Full daily history (earliest data to the last complete day) for one
  *  channel view. Read-only GA4 Data API calls; no paid APIs. */
 async function getHistory(
@@ -107,6 +144,27 @@ async function getHistory(
     opts.now,
   );
   const endDate = resolvedDateRange.endDate;
+
+  // Prefer stored daily rows when they cover up to the last complete day.
+  const coverageEnd = await MetricsHistoryRepository.getGa4CoverageEnd(
+    input.projectId,
+  );
+  if (coverageEnd && coverageEnd >= shiftDate(endDate, -1)) {
+    const stored = await getStoredDays(input, endDate);
+    const lastDate = stored.at(-1)?.date ?? null;
+    return {
+      connected: true as const,
+      propertyDisplayName: connection.propertyDisplayName,
+      propertyTimeZone: connection.propertyTimeZone,
+      channel: input.channel,
+      dataStart: stored[0]?.date ?? null,
+      dataEnd: lastDate && lastDate < endDate ? lastDate : endDate,
+      days: stored,
+      hasLimitedData: false,
+      truncated: false,
+    };
+  }
+
   const client = createGa4DataClient({
     userId: connection.connectedByUserId,
     ga4AccountId: connection.ga4AccountId,
