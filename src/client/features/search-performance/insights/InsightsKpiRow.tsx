@@ -38,10 +38,13 @@ export function InsightsKpiRow({
   totals,
   deltas,
   compareLabel,
+  noCompareData = false,
 }: {
   totals: InsightsTotals;
   deltas: InsightsTotalsWithDelta | null;
   compareLabel: string;
+  /** Compare was requested but stored history does not cover that window. */
+  noCompareData?: boolean;
 }) {
   return (
     <section
@@ -68,7 +71,9 @@ export function InsightsKpiRow({
               </p>
             ) : (
               <p className="mt-1 text-sm text-muted-foreground">
-                No comparison
+                {noCompareData
+                  ? "No comparison data for this period"
+                  : "No comparison"}
               </p>
             )}
           </CardShell>

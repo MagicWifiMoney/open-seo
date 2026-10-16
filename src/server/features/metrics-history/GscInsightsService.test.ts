@@ -1,3 +1,4 @@
+import { gscInsightsInputSchema } from "@/types/schemas/gsc-insights";
 import { sort } from "remeda";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MetricsHistoryRepository as repo } from "./MetricsHistoryRepository";
@@ -275,5 +276,72 @@ describe("getInsights", () => {
     });
     expect(out.movers.losers.map((r) => r.key)).toEqual(["falling"]);
     expect(out.movers.losers[0]?.clicksDelta).toBe(-56);
+  });
+});
+
+describe("compare coverage", () => {
+  const base = { projectId: P, range: "28d" as const, device: "all" as const };
+
+  it("drops a year-over-year window that predates stored history", async () => {
+    await seed();
+    const out = await svc.getInsights({ ...base, compare: "year_over_year" });
+    if (out.coverage === null) throw new Error("expected coverage");
+    expect(out.compareCoverage).toBe("none");
+    expect(out.compareWindow).toBeNull();
+    expect(out.compareTotals).toBeNull();
+    expect(out.deltas).toBeNull();
+    expect(out.compareDaily).toEqual([]);
+    expect(out.movers).toEqual({ gainers: [], losers: [] });
+    expect(out.topQueries[0]).toMatchObject({ prevClicks: 0 });
+  });
+
+  it("drops a previous period that only partly overlaps history", async () => {
+    await seed();
+    const out = await svc.getInsights({
+      ...base,
+      compare: "previous_period",
+      from: "2026-01-20",
+      to: END,
+    });
+    if (out.coverage === null) throw new Error("expected coverage");
+    expect(out.compareCoverage).toBe("partial");
+    expect(out.deltas).toBeNull();
+    expect(out.movers).toEqual({ gainers: [], losers: [] });
+  });
+
+  it("reports full coverage when the compare window is stored", async () => {
+    await seed();
+    const out = await svc.getInsights({ ...base, compare: "previous_period" });
+    if (out.coverage === null) throw new Error("expected coverage");
+    expect(out.compareCoverage).toBe("full");
+    expect(out.deltas).not.toBeNull();
+  });
+});
+
+describe("custom range", () => {
+  it("clamps a from date below coverage start", () => {
+    expect(
+      resolveWindow(
+        { range: "28d", from: "2025-06-01", to: "2026-02-10" },
+        { start: START, end: END },
+      ),
+    ).toEqual({ start: START, end: "2026-02-10" });
+  });
+
+  it("rejects a half custom range", () => {
+    expect(
+      gscInsightsInputSchema.safeParse({ projectId: P, from: "2026-01-02" })
+        .success,
+    ).toBe(false);
+    expect(
+      gscInsightsInputSchema.safeParse({
+        projectId: P,
+        from: "2026-01-02",
+        to: "2026-01-09",
+      }).success,
+    ).toBe(true);
+    expect(gscInsightsInputSchema.safeParse({ projectId: P }).success).toBe(
+      true,
+    );
   });
 });

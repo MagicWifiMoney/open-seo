@@ -46,7 +46,8 @@ export function resolveWindow(
 ): DateWindow {
   if (input.from && input.to) {
     const end = input.to < coverage.end ? input.to : coverage.end;
-    const start = input.from > end ? end : input.from;
+    const from = input.from < coverage.start ? coverage.start : input.from;
+    const start = from > end ? end : from;
     return { start, end };
   }
   const end = coverage.end;
