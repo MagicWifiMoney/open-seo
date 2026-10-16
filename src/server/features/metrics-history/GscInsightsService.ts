@@ -6,6 +6,7 @@ import {
 import { resolveCompareWindow, resolveWindow } from "./gscInsightsWindows";
 import type {
   DateWindow,
+  CompareCoverage,
   GscInsights,
   GscInsightsCompare,
   GscInsightsDevice,
@@ -91,7 +92,17 @@ async function getInsights(input: {
   if (!coverage) return { coverage: null };
 
   const window = resolveWindow(input, coverage);
-  const compareWindow = resolveCompareWindow(window, input.compare);
+  const requestedCompare = resolveCompareWindow(window, input.compare);
+  // A compare window that starts before stored history would read missing days
+  // as zeros and report the full current value as the change. Drop it instead.
+  const compareCoverage: CompareCoverage = !requestedCompare
+    ? "none"
+    : requestedCompare.start >= coverage.start
+      ? "full"
+      : requestedCompare.end >= coverage.start
+        ? "partial"
+        : "none";
+  const compareWindow = compareCoverage === "full" ? requestedCompare : null;
 
   const [series, split, buckets, queries, pages, movers] = await Promise.all([
     reads.getDailySeries(projectId, window, compareWindow, device),
@@ -143,7 +154,11 @@ async function getInsights(input: {
     compareDaily,
     totals,
     compareTotals,
-    deltas: compareTotals ? computeDeltas(totals, compareTotals) : null,
+    compareCoverage,
+    deltas:
+      compareTotals && compareTotals.impressions > 0
+        ? computeDeltas(totals, compareTotals)
+        : null,
     deviceSplit: sort(
       split.map((row) => ({
         ...row,

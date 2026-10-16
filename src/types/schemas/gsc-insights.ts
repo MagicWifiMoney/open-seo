@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 // Shared by the GSC Insights server function and page (no server imports).
 
 export const GSC_INSIGHTS_RANGES = ["28d", "3m", "6m", "12m", "16m"] as const;
@@ -16,6 +18,8 @@ export const GSC_INSIGHTS_DEVICES = [
 export type GscInsightsRange = (typeof GSC_INSIGHTS_RANGES)[number];
 export type GscInsightsCompare = (typeof GSC_INSIGHTS_COMPARES)[number];
 export type GscInsightsDevice = (typeof GSC_INSIGHTS_DEVICES)[number];
+
+export type CompareCoverage = "full" | "partial" | "none";
 
 export type DateWindow = { start: string; end: string };
 
@@ -67,6 +71,10 @@ export type GscInsights =
       };
       window: DateWindow;
       compareWindow: DateWindow | null;
+      /** full: compare window is inside stored history. partial: it starts
+       *  before history, so it is dropped. none: no compare requested or no
+       *  overlap with stored history. */
+      compareCoverage: CompareCoverage;
       daily: InsightsDailyRow[];
       compareDaily: InsightsDailyRow[];
       totals: InsightsTotals;
@@ -92,3 +100,20 @@ export type GscInsights =
       movers: { gainers: InsightsRow[]; losers: InsightsRow[] };
       source: "stored";
     };
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+export const gscInsightsInputSchema = z
+  .object({
+    projectId: z.string().min(1),
+    range: z.enum(GSC_INSIGHTS_RANGES).default("3m"),
+    // Custom window: both dates together override the preset.
+    from: isoDate.optional(),
+    to: isoDate.optional(),
+    compare: z.enum(GSC_INSIGHTS_COMPARES).default("previous_period"),
+    device: z.enum(GSC_INSIGHTS_DEVICES).default("all"),
+  })
+  .refine((data) => Boolean(data.from) === Boolean(data.to), {
+    message: "Custom range needs both from and to.",
+    path: ["from"],
+  });

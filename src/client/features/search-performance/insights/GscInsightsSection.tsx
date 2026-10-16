@@ -138,6 +138,9 @@ export function GscInsightsSection({
             totals={data.totals}
             deltas={data.deltas}
             compareLabel={compareLabel}
+            noCompareData={
+              compare !== "none" && data.compareCoverage !== "full"
+            }
           />
           <InsightsTrendChart
             daily={data.daily}
