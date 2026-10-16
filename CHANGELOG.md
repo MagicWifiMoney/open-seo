@@ -10,3 +10,4 @@
 2026-10-16 17:30 CDT [claude-code] client-access - DEPLOYED to open-seo-miller: @millerestatesolutions.com admitted as client role, spend gate live, SAM bubble (blocked on OpenRouter credit), GSC Insights rebuilt on stored rows
 2026-10-16 18:05 CDT [claude-code] client-access - SAM chat bubble unmounted from project pages (Jake: not working; OpenRouter credit empty); component kept, toast offset reverted
 2026-10-16 18:40 CDT [worker] costs-ledger - cost_ledger table (D1 0059, pg 0037), DataForSEO metering seam + OpenRouter/SAM rows, listProjectCosts server fn; no deploy
+2026-10-16 19:40 CDT [claude-code] costs - Costs tab (all roles): cost_ledger records every paid DataForSEO/OpenRouter call at provider cost with run attribution; listProjectCosts shows runs (actual/estimated), lookups, daily chart, balance; deployed to open-seo-miller
