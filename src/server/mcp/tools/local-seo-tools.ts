@@ -236,7 +236,9 @@ export const getBusinessProfileTool = {
   },
   handler: withMcpProjectAuth(async (args: GetBusinessProfileArgs, context) => {
     const identifier = resolveBusinessIdentifier(args);
-    const client = createDataforseoClient(context.billing);
+    const client = createDataforseoClient(context.billing, {
+      operation: "MCP: get_business_profile",
+    });
     const profile = await client.business.myBusinessInfo({
       keyword: businessIdentifierKeyword(identifier),
       ...resolveBusinessLocation(args, context.project),
@@ -397,7 +399,9 @@ export const getBusinessReviewsTool = {
       publicTaskId = args.taskId;
     } else {
       const identifier = resolveBusinessIdentifier(args);
-      const client = createDataforseoClient(context.billing);
+      const client = createDataforseoClient(context.billing, {
+        operation: "MCP: get_business_reviews",
+      });
       // Only the post is metered; the polling below collects for free.
       const postedId = await client.business.reviewsTaskPost({
         ...identifier,
@@ -555,7 +559,9 @@ export const getBusinessUpdatesTool = {
       taskId = args.taskId;
     } else {
       const identifier = resolveBusinessIdentifier(args);
-      const client = createDataforseoClient(context.billing);
+      const client = createDataforseoClient(context.billing, {
+        operation: "MCP: get_business_updates",
+      });
       taskId = await client.business.updatesTaskPost({
         keyword: businessIdentifierKeyword(identifier),
         ...resolveBusinessLocation(args, context.project),
@@ -1053,9 +1059,10 @@ export const getLocalRankGridTool = {
       taskIds = receipt.data;
     } else {
       // Only the post is metered; collection is free.
-      taskIds = await createDataforseoClient(
-        context.billing,
-      ).serp.localTaskPost({
+      taskIds = await createDataforseoClient(context.billing, {
+        operation: "MCP: get_local_rank_grid",
+        requestSummary: { keyword: args.keyword },
+      }).serp.localTaskPost({
         keyword: args.keyword,
         locationCoordinates: points.map((point) =>
           formatLocalSerpCoordinate({ ...point, zoom }),

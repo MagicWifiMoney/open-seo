@@ -3,6 +3,7 @@ import {
   trackUsageCreditSpend,
   type BillingCustomerContext,
 } from "./subscription";
+import { CostLedgerRepository } from "@/server/features/costs/CostLedgerRepository";
 import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
 import type { CreditFeature } from "@/shared/billing-credit-features";
 
@@ -20,6 +21,23 @@ export async function billResearchSpend(
 ) {
   const charges = spend.filter(({ costUsd }) => costUsd > 0);
   if (!charges.length) return;
+  // Ledger every charge at actual cost in every mode; it never throws.
+  if (customer.projectId) {
+    const projectId = customer.projectId;
+    await CostLedgerRepository.recordMany(
+      charges.map(({ provider, creditFeature, operation, costUsd }) => ({
+        projectId,
+        organizationId: customer.organizationId,
+        userId: customer.userId,
+        source: provider === "openrouter" ? "llm" : "serp",
+        provider,
+        creditFeature,
+        operation,
+        costUsd,
+        status: "ok",
+      })),
+    );
+  }
   try {
     if (!(await isHostedServerAuthMode())) return;
     // Read only to choose the credit pool, never to gate an admitted task.

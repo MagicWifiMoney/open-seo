@@ -57,7 +57,11 @@ export async function localizeResearchRows(
   // Research results cap at 500 rows, under the endpoint's 1,000 keyword
   // limit, so one call covers them.
   const items = await fetchAdsSearchVolumeForKeywords(
-    createDataforseoClient(billingCustomer),
+    createDataforseoClient(billingCustomer, {
+      source: "keyword_research",
+      operation: "Keyword research: local search volume",
+      requestSummary: { keywords: rows.length, location: params.locationName },
+    }),
     { ...params, keywords: rows.map((row) => row.keyword) },
   );
   const localByKeyword = new Map(

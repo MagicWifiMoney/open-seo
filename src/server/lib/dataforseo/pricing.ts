@@ -110,7 +110,7 @@ const UPDATES_PRIORITY_PER_10_USD = 0.0015;
 
 // OnPage Lighthouse, live (dataforseo.com/pricing/on-page/lighthouse-api);
 // fixtures show $0.00425 billed.
-const LIGHTHOUSE_LIVE_USD = 0.005;
+export const LIGHTHOUSE_LIVE_USD = 0.005;
 
 // AI Optimization (dataforseo.com/pricing/ai-optimization/llm-mentions):
 // $0.1 per request + $0.001 per row on every llm_mentions endpoint.

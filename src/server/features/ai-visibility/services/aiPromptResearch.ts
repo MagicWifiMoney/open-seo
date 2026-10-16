@@ -169,7 +169,11 @@ async function loadPrompts(
   const cached = cachedResearchSchema.safeParse(await getCached(cacheKey));
   if (cached.success) return cached.data;
 
-  const client = createDataforseoClient(customer);
+  const client = createDataforseoClient(customer, {
+    source: "ai_lookup",
+    operation: `AI prompt research: ${request.topic}`,
+    requestSummary: { topic: request.topic, platform: request.platform },
+  });
   // Answers often use the category words when the question doesn't. Short
   // keywords match as a phrase; longer ones rarely appear verbatim.
   const [data, serp] = await Promise.all([

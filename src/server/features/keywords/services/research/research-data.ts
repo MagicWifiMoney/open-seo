@@ -104,7 +104,15 @@ export async function fetchGoogleAdsResearchRows(
   params: Omit<FetchResearchRowsParams, "source">,
   billingCustomer: BillingCustomerContext,
 ): Promise<EnrichedKeyword[]> {
-  const dataforseo = createDataforseoClient(billingCustomer);
+  const dataforseo = createDataforseoClient(billingCustomer, {
+    source: "keyword_research",
+    operation: `Keyword research: ${params.seedKeyword}`,
+    requestSummary: {
+      seed: params.seedKeyword,
+      source: "ads",
+      locationCode: params.locationCode,
+    },
+  });
   return mapAdsKeywordItems(
     await dataforseo.keywords.adsIdeas({
       keyword: params.seedKeyword,
@@ -144,7 +152,15 @@ export async function fetchResearchRowsBySource(
   params: FetchResearchRowsParams,
   billingCustomer: BillingCustomerContext,
 ): Promise<EnrichedKeyword[]> {
-  const dataforseo = createDataforseoClient(billingCustomer);
+  const dataforseo = createDataforseoClient(billingCustomer, {
+    source: "keyword_research",
+    operation: `Keyword research: ${params.seedKeyword}`,
+    requestSummary: {
+      seed: params.seedKeyword,
+      source: params.source,
+      locationCode: params.locationCode,
+    },
+  });
 
   if (params.source === "related") {
     return fetchRelatedRows(params, dataforseo);

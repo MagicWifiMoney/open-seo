@@ -137,6 +137,15 @@ function engineBatches(answers: AiLiveTask[], size: number): AiTaskBatch[] {
   return batches;
 }
 
+function aiRunLedgerContext(runId: string, operation: string) {
+  return {
+    source: "ai_visibility",
+    runId,
+    runKind: "ai_run",
+    operation,
+  } as const;
+}
+
 /**
  * Posts one batch through the metered client, which bills it. Answers the
  * provider did not accept fail now; the rest are collected later.
@@ -151,7 +160,10 @@ export async function postAiBatch(
   // A rejected entry is logged where it is parsed.
   let error: ErrorCode = "INTERNAL_ERROR";
   try {
-    posted = await createDataforseoClient(customer).aiSearch.trackingTaskPost({
+    posted = await createDataforseoClient(
+      customer,
+      aiRunLedgerContext(runId, `AI visibility ${batch.engine} batch`),
+    ).aiSearch.trackingTaskPost({
       engine: batch.engine,
       tasks: batch.tasks,
       ...market,
@@ -190,7 +202,7 @@ export async function collectAiLiveBatch(
   let remaining = tasks;
   for (let attempt = 1; remaining.length > 0; attempt++) {
     if (attempt > 1) await waitBeforeRetry();
-    const answers = await fetchLiveAnswers(customer, market, remaining);
+    const answers = await fetchLiveAnswers(runId, customer, market, remaining);
     const retry: AiLiveTask[] = [];
     for (const [index, result] of answers.entries()) {
       const task = remaining[index];
@@ -220,13 +232,17 @@ export async function collectAiLiveBatch(
 
 /** A call that throws becomes a failed answer that is not retried. */
 async function fetchLiveAnswers(
+  runId: string,
   customer: BillingCustomerContext,
   market: AiRunMarket,
   tasks: AiLiveTask[],
 ): Promise<AiTrackingAnswer[]> {
   let settled: PromiseSettledResult<AiTrackingAnswer>[];
   try {
-    settled = await createDataforseoClient(customer).aiSearch.trackingLiveBatch(
+    settled = await createDataforseoClient(
+      customer,
+      aiRunLedgerContext(runId, "AI visibility live answers"),
+    ).aiSearch.trackingLiveBatch(
       tasks.map((task) => ({ engine: task.engine, task, ...market })),
     );
   } catch (error) {
@@ -263,7 +279,10 @@ export async function collectAiModelBatch(
     throw new AppError("INTERNAL_ERROR", `${modelSlug} has no model API batch`);
   const brands = await runBrands(runId);
   if (!brands) return;
-  const client = createDataforseoClient(customer);
+  const client = createDataforseoClient(
+    customer,
+    aiRunLedgerContext(runId, `AI visibility ${modelSlug} answers`),
+  );
   const modelName = await resolveLatestLlmModelName(modelSlug);
   const country = getIsoCountryCode(market.locationCode).toUpperCase();
   await Promise.all(

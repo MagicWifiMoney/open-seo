@@ -139,7 +139,9 @@ export const getSerpResultsTool = {
     },
   },
   handler: withMcpProjectAuth(async (args: Args, context) => {
-    const client = createDataforseoClient(context.billing);
+    const client = createDataforseoClient(context.billing, {
+      operation: "MCP: get_serp_results",
+    });
     const depth = args.depth ?? SERP_ANALYSIS_DEPTH;
     const results = await Promise.all(
       args.queries.map(async (q) => {

@@ -1,4 +1,6 @@
+/* eslint-disable max-lines -- the SAM agent stays in one module; the cost ledger turn hook adds a few lines */
 import { Think } from "@cloudflare/think";
+import { ledgerSamTurn } from "@/server/features/sam/samTurnLedger";
 import type {
   ChatErrorContext,
   ChatRecoveryContext,
@@ -144,6 +146,8 @@ export class SamChatAgent extends Think {
   // onChatResponse. Deductions run off the inference loop, serialized so they
   // land in order; waitUntil keeps the final flush alive in the background.
   private turnUnbilledUsd = 0;
+  // Spend not yet written to the cost ledger; one row per turn on flush.
+  private turnLedgerUsd = 0;
   private turnMonthlyRemaining: number | null = null;
   private billing: Promise<void> = Promise.resolve();
 
@@ -404,7 +408,9 @@ export class SamChatAgent extends Think {
   // armed balance) are never metered.
   private recordSpend(costUsd: number, { flush = false } = {}): void {
     this.turnUnbilledUsd += costUsd;
+    this.turnLedgerUsd += costUsd;
     this.telemetry.spend(costUsd);
+    if (flush) this.ledgerTurnSpend();
     const armed = this.turnMonthlyRemaining;
     if (armed === null) return;
     if (!flush && this.turnUnbilledUsd < SAM_BILLING_CHUNK_USD) return;
@@ -416,6 +422,18 @@ export class SamChatAgent extends Think {
       .catch((error: unknown) => {
         console.error("[sam] credit metering failed", error);
         this.telemetry.captureError(error, { stage: "metering" });
+      });
+  }
+
+  // Chained on the billing promise so flushSpend's waitUntil keeps it alive.
+  private ledgerTurnSpend(): void {
+    const costUsd = this.turnLedgerUsd;
+    this.turnLedgerUsd = 0;
+    if (!(costUsd > 0)) return;
+    this.billing = this.billing
+      .then(() => ledgerSamTurn(() => this.loadSamContext(), costUsd))
+      .catch((error: unknown) => {
+        console.error("[cost-ledger] write failed", error);
       });
   }
 

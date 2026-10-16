@@ -84,6 +84,7 @@ describe("explore_prompt", () => {
       const result = await explorePromptTool.handler(args, context);
       expect(mocks.client).toHaveBeenCalledWith(
         expect.objectContaining({ organizationId: "org_123", projectId }),
+        expect.objectContaining({ source: "ai_lookup" }),
       );
       expect(mocks.response.mock.calls.map(([call]) => call.modelSlug)).toEqual(
         expected,

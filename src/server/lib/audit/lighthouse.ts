@@ -55,8 +55,15 @@ export async function fetchLighthouseResult(
   pageId: string,
   strategy: "mobile" | "desktop",
   billingCustomer: BillingCustomerContext,
+  auditId?: string,
 ): Promise<LighthouseFetchResult> {
-  const dataforseo = createDataforseoClient(billingCustomer);
+  const dataforseo = createDataforseoClient(billingCustomer, {
+    source: "site_audit",
+    runId: auditId,
+    runKind: auditId ? "audit" : undefined,
+    operation: `Lighthouse ${strategy}`,
+    requestSummary: { url },
+  });
   try {
     const data = await dataforseo.lighthouse.live({ url, strategy });
 

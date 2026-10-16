@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- audit phases stay in one module; the cost ledger run id adds a few lines */
 import type { WorkflowStep } from "cloudflare:workers";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
 import { discoverUrls, parseRobotsTxt } from "@/server/lib/audit/discovery";
@@ -234,8 +235,20 @@ export async function runLighthousePhase(
           LIGHTHOUSE_FETCH_STEP,
           () =>
             Promise.all([
-              fetchLighthouseResult(url, pageId, "mobile", billingCustomer),
-              fetchLighthouseResult(url, pageId, "desktop", billingCustomer),
+              fetchLighthouseResult(
+                url,
+                pageId,
+                "mobile",
+                billingCustomer,
+                auditId,
+              ),
+              fetchLighthouseResult(
+                url,
+                pageId,
+                "desktop",
+                billingCustomer,
+                auditId,
+              ),
             ]),
         ),
       ),

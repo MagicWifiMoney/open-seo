@@ -102,7 +102,11 @@ export async function getBrandLookup(
     };
   }
 
-  const dataforseo = createDataforseoClient(billingCustomer);
+  const dataforseo = createDataforseoClient(billingCustomer, {
+    source: "ai_lookup",
+    operation: `Brand lookup: ${input.query}`,
+    requestSummary: { query: input.query },
+  });
 
   // Settle each platform independently so a failure in one doesn't discard the
   // other. Keep the metered DataForSEO calls sequenced: in hosted mode each

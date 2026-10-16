@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- the single metering seam: every client entry plus the hold/settle/ledger logic */
 import { waitUntil } from "cloudflare:workers";
 import {
   type CreditFeature,
@@ -65,8 +66,14 @@ import {
 } from "@/server/lib/dataforseo/ai-tracking";
 import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
 import { AppError } from "@/server/lib/errors";
+import {
+  buildLedgerEntry,
+  recordLedgerEntries,
+  type CostLedgerContext,
+} from "@/server/lib/dataforseo/cost-ledger";
 
 export { mapDataforseoPathToCreditFeature };
+export type { CostLedgerContext };
 
 /**
  * Wraps a section fetcher with billing metering. Each entry on the client is
@@ -84,6 +91,7 @@ export { mapDataforseoPathToCreditFeature };
  */
 function meter<I, T>(
   customer: BillingCustomerContext,
+  ctx: CostLedgerContext | undefined,
   fetcher: (input: I) => Promise<DataforseoApiResponse<T>>,
   estimateRawUsd: (input: I) => number,
   defaultFeature?: CreditFeature,
@@ -91,29 +99,36 @@ function meter<I, T>(
   return (input) =>
     meterDataforseoCall(
       customer,
+      ctx,
       () => fetcher(input),
       creditsForProviderUsd(estimateRawUsd(input)),
       input.creditFeature ?? defaultFeature,
     );
 }
 
-export function createDataforseoClient(customer: BillingCustomerContext) {
+export function createDataforseoClient(
+  customer: BillingCustomerContext,
+  ctx?: CostLedgerContext,
+) {
   return {
     business: {
       businessListings: meter(
         customer,
+        ctx,
         fetchBusinessListingsSearch,
         dataforseoPricing.business.businessListings,
         "local_seo",
       ),
       questionsAnswers: meter(
         customer,
+        ctx,
         fetchQuestionsAnswers,
         dataforseoPricing.business.questionsAnswers,
         "local_seo",
       ),
       myBusinessInfo: meter(
         customer,
+        ctx,
         fetchMyBusinessInfo,
         dataforseoPricing.business.myBusinessInfo,
         "local_seo",
@@ -122,12 +137,14 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
       // through fetchBusinessDataTaskResult (see index.ts).
       reviewsTaskPost: meter(
         customer,
+        ctx,
         postGoogleReviewsTask,
         dataforseoPricing.business.reviewsTaskPost,
         "local_seo",
       ),
       updatesTaskPost: meter(
         customer,
+        ctx,
         postMyBusinessUpdatesTask,
         dataforseoPricing.business.updatesTaskPost,
         "local_seo",
@@ -136,26 +153,31 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
     backlinks: {
       summary: meter(
         customer,
+        ctx,
         fetchBacklinksSummary,
         dataforseoPricing.backlinks.summary,
       ),
       rows: meter(
         customer,
+        ctx,
         fetchBacklinksRows,
         dataforseoPricing.backlinks.rows,
       ),
       referringDomains: meter(
         customer,
+        ctx,
         fetchReferringDomains,
         dataforseoPricing.backlinks.referringDomains,
       ),
       domainPages: meter(
         customer,
+        ctx,
         fetchDomainPagesSummary,
         dataforseoPricing.backlinks.domainPages,
       ),
       history: meter(
         customer,
+        ctx,
         fetchBacklinksHistory,
         dataforseoPricing.backlinks.history,
       ),
@@ -163,27 +185,32 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
     keywords: {
       related: meter(
         customer,
+        ctx,
         fetchRelatedKeywords,
         dataforseoPricing.keywords.related,
       ),
       suggestions: meter(
         customer,
+        ctx,
         fetchKeywordSuggestions,
         dataforseoPricing.keywords.suggestions,
       ),
       ideas: meter(
         customer,
+        ctx,
         fetchKeywordIdeas,
         dataforseoPricing.keywords.ideas,
       ),
       // Google Ads endpoints for countries Labs doesn't support.
       adsIdeas: meter(
         customer,
+        ctx,
         fetchAdsKeywordIdeas,
         dataforseoPricing.keywords.adsIdeas,
       ),
       adsSearchVolume: meter(
         customer,
+        ctx,
         fetchAdsSearchVolume,
         dataforseoPricing.keywords.adsSearchVolume,
       ),
@@ -191,27 +218,31 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
     domain: {
       rankOverview: meter(
         customer,
+        ctx,
         fetchDomainRankOverview,
         dataforseoPricing.domain.rankOverview,
       ),
       rankedKeywords: meter(
         customer,
+        ctx,
         fetchRankedKeywords,
         dataforseoPricing.domain.rankedKeywords,
       ),
       relevantPages: meter(
         customer,
+        ctx,
         fetchRelevantPages,
         dataforseoPricing.domain.relevantPages,
       ),
     },
     serp: {
-      live: meter(customer, fetchLiveSerp, dataforseoPricing.serp.live),
+      live: meter(customer, ctx, fetchLiveSerp, dataforseoPricing.serp.live),
       // A rank check batch shares one credit hold and one settle across its
       // live calls (see meterDataforseoCalls). Resolves per call, in order.
       rankCheckBatch: (inputs: Parameters<typeof fetchRankCheckSerp>[0][]) =>
         meterDataforseoCalls(
           customer,
+          ctx,
           inputs.map((input) => () => fetchRankCheckSerp(input)),
           inputs.map((input) =>
             creditsForProviderUsd(dataforseoPricing.serp.rankCheck(input)),
@@ -223,12 +254,14 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
       // free).
       rankCheckTaskPost: meter(
         customer,
+        ctx,
         postRankCheckTasks,
         dataforseoPricing.serp.rankCheckTaskPost,
         "rank_tracking",
       ),
       local: meter(
         customer,
+        ctx,
         fetchLocalSerp,
         dataforseoPricing.serp.local,
         "local_seo",
@@ -237,6 +270,7 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
       // them all (DataForSEO bills task_post, collection is free).
       localTaskPost: meter(
         customer,
+        ctx,
         postLocalSerpTasks,
         dataforseoPricing.serp.localTaskPost,
         "local_seo",
@@ -248,12 +282,14 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
       // rank_tracking when omitted.
       keywordOverview: meter(
         customer,
+        ctx,
         fetchKeywordOverview,
         dataforseoPricing.labs.keywordOverview,
         "rank_tracking",
       ),
       serpCompetitors: meter(
         customer,
+        ctx,
         fetchSerpCompetitors,
         dataforseoPricing.labs.serpCompetitors,
       ),
@@ -261,6 +297,7 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
     lighthouse: {
       live: meter(
         customer,
+        ctx,
         fetchLighthouseResult,
         dataforseoPricing.lighthouse.live,
       ),
@@ -268,26 +305,31 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
     aiSearch: {
       mentionsSearch: meter(
         customer,
+        ctx,
         fetchLlmMentionsSearch,
         dataforseoPricing.aiSearch.mentionsSearch,
       ),
       aggregatedMetrics: meter(
         customer,
+        ctx,
         fetchLlmAggregatedMetrics,
         dataforseoPricing.aiSearch.aggregatedMetrics,
       ),
       topPages: meter(
         customer,
+        ctx,
         fetchLlmTopPages,
         dataforseoPricing.aiSearch.topPages,
       ),
       crossAggregatedMetrics: meter(
         customer,
+        ctx,
         fetchLlmCrossAggregatedMetrics,
         dataforseoPricing.aiSearch.crossAggregatedMetrics,
       ),
       llmResponse: meter(
         customer,
+        ctx,
         fetchLlmResponse,
         dataforseoPricing.aiSearch.llmResponse,
       ),
@@ -295,6 +337,7 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
       // covers the batch (DataForSEO bills task_post, collection is free).
       trackingTaskPost: meter(
         customer,
+        ctx,
         postAiTrackingTasks,
         dataforseoPricing.aiSearch.trackingTaskPost,
         "ai_prompt_responses",
@@ -306,6 +349,7 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
       ) =>
         meterDataforseoCalls(
           customer,
+          ctx,
           inputs.map((input) => () => fetchAiTrackingLiveAnswer(input)),
           inputs.map((input) =>
             creditsForProviderUsd(
@@ -332,6 +376,7 @@ export function createDataforseoClient(customer: BillingCustomerContext) {
  */
 async function meterDataforseoCalls<T>(
   customer: BillingCustomerContext,
+  ctx: CostLedgerContext | undefined,
   executes: Array<() => Promise<DataforseoApiResponse<T>>>,
   callCredits: number[],
   creditFeature?: CreditFeature,
@@ -339,10 +384,53 @@ async function meterDataforseoCalls<T>(
   if (executes.length === 0) return [];
   const isHostedMode = await isHostedServerAuthMode();
 
-  if (!isHostedMode) {
-    return Promise.allSettled(
-      executes.map(async (execute) => (await execute()).data),
+  // One ledger row per call that DataForSEO billed, in both modes.
+  const outcomes: Array<{
+    billing: DataforseoApiCallCost;
+    status: "ok" | "failed_charged";
+  } | null> = executes.map(() => null);
+  const ledgerEntries = () =>
+    outcomes.map((outcome) =>
+      outcome
+        ? buildLedgerEntry({
+            customer,
+            ctx,
+            creditFeature,
+            billing: outcome.billing,
+            status: outcome.status,
+          })
+        : null,
     );
+
+  if (!isHostedMode) {
+    const selfHostWork = (async () => {
+      const settled = await Promise.allSettled(
+        executes.map(async (execute, index) => {
+          try {
+            const result = await execute();
+            outcomes[index] = { billing: result.billing, status: "ok" };
+            return result.data;
+          } catch (error) {
+            if (error instanceof DataforseoChargedTaskError)
+              outcomes[index] = {
+                billing: error.billing,
+                status: "failed_charged",
+              };
+            throw error;
+          }
+        }),
+      );
+      await recordLedgerEntries(ledgerEntries());
+      return settled;
+    })();
+    // Same lifetime rule as the hosted branch: the ledger write must outlive
+    // the response.
+    try {
+      waitUntil(selfHostWork.catch(() => undefined));
+    } catch {
+      // No request context (Workflow step, tests): the await below runs it.
+    }
+    return await selfHostWork;
   }
 
   const billingCustomer = await getOrCreateOrganizationCustomer(customer);
@@ -365,6 +453,7 @@ async function meterDataforseoCalls<T>(
         try {
           const result = await execute();
           billed[index] = result.billing;
+          outcomes[index] = { billing: result.billing, status: "ok" };
           return result.data;
         } catch (error) {
           // Transport / auth / upstream failure: nothing was billed.
@@ -378,10 +467,17 @@ async function meterDataforseoCalls<T>(
             throw new AppError("VALIDATION_ERROR", error.message);
           }
           billed[index] = error.billing;
+          outcomes[index] = {
+            billing: error.billing,
+            status: "failed_charged",
+          };
           throw error;
         }
       }),
     );
+
+    // Ledger first: a settle failure below must not lose the record of spend.
+    await recordLedgerEntries(ledgerEntries());
 
     for (const hold of holds) {
       const costs = hold.callIndexes
@@ -415,12 +511,14 @@ async function meterDataforseoCalls<T>(
 
 async function meterDataforseoCall<T>(
   customer: BillingCustomerContext,
+  ctx: CostLedgerContext | undefined,
   execute: () => Promise<DataforseoApiResponse<T>>,
   estimatedCredits: number,
   creditFeature?: CreditFeature,
 ): Promise<T> {
   const [result] = await meterDataforseoCalls(
     customer,
+    ctx,
     [execute],
     [estimatedCredits],
     creditFeature,

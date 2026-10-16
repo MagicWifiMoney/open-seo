@@ -36,6 +36,7 @@ describe("assertOk", () => {
         expect(error.billing).toEqual({
           path: task.path,
           costUsd: 0.05,
+          resultCount: 0,
         });
       }
     }
@@ -144,7 +145,11 @@ describe("assertOk", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(DataforseoChargedTaskError);
       if (error instanceof DataforseoChargedTaskError) {
-        expect(error.billing).toEqual({ path: task.path, costUsd: 0.02 });
+        expect(error.billing).toEqual({
+          path: task.path,
+          costUsd: 0.02,
+          resultCount: 0,
+        });
         expect(error.isInvalidField).toBe(true);
       }
     }

@@ -374,7 +374,15 @@ export class RankCheckWorkflow extends WorkflowEntrypoint<
       );
 
       const keywords = prepareResult.keywords;
-      const client = createDataforseoClient(billingCustomer);
+      const client = createDataforseoClient(
+        { ...billingCustomer, projectId },
+        {
+          source: "rank_check",
+          runId,
+          runKind: "rank_check_run",
+          operation: "Rank check",
+        },
+      );
 
       console.log(`[rank-check] ${runId} loaded ${keywords.length} keywords`);
 

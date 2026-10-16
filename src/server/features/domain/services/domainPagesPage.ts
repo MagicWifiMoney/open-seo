@@ -177,7 +177,11 @@ export async function getPagesPage(
     return cached.data;
   }
 
-  const dataforseo = createDataforseoClient(billingCustomer);
+  const dataforseo = createDataforseoClient(billingCustomer, {
+    source: "domain",
+    operation: `Domain pages: ${target.hostname}`,
+    requestSummary: { target: target.hostname, page: input.page },
+  });
   const response = await dataforseo.domain.relevantPages({
     target: target.hostname,
     locationCode: input.locationCode,

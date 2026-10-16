@@ -82,6 +82,7 @@ describe("DataForSEO SDK-backed endpoints", () => {
     expect(result.billing).toEqual({
       path: ["v3", "business_data", "google", "questions_and_answers", "live"],
       costUsd: 0.0006,
+      resultCount: 1,
     });
   });
 

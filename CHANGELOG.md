@@ -9,3 +9,4 @@
 2026-10-16 17:00 CDT [claude-code] client-role - owner allowlist (ACCESS_OWNER_EMAILS) replaces client lists, SAM client daily turn cap, client keyword/schedule caps, saveAiVisibilityTracker and website setup gated, non-circular paid-path scan test
 2026-10-16 17:30 CDT [claude-code] client-access - DEPLOYED to open-seo-miller: @millerestatesolutions.com admitted as client role, spend gate live, SAM bubble (blocked on OpenRouter credit), GSC Insights rebuilt on stored rows
 2026-10-16 18:05 CDT [claude-code] client-access - SAM chat bubble unmounted from project pages (Jake: not working; OpenRouter credit empty); component kept, toast offset reverted
+2026-10-16 18:40 CDT [worker] costs-ledger - cost_ledger table (D1 0059, pg 0037), DataForSEO metering seam + OpenRouter/SAM rows, listProjectCosts server fn; no deploy

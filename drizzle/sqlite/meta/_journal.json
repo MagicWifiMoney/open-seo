@@ -414,6 +414,13 @@
       "when": 1792156221309,
       "tag": "0058_demonic_rockslide",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "6",
+      "when": 1792193094601,
+      "tag": "0059_jazzy_garia",
+      "breakpoints": true
     }
   ]
 }

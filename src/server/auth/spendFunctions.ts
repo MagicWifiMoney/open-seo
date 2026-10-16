@@ -167,6 +167,8 @@ export const FREE_DESPITE_IMPORT: Record<string, string> = {
     "stored rows or Google Search Console, which is not metered",
   "src/serverFunctions/dashboard.ts:getDashboardEmergingQueries":
     "stored rows or Google Search Console, which is not metered",
+  "src/serverFunctions/costs.ts:listProjectCosts":
+    "reads the local cost ledger plus the free DataForSEO balance snapshot; reports spend, triggers none",
   "src/serverFunctions/dataforseo-spend.ts:getDataforseoSpend":
     "DataForSEO account snapshot, a free non-billable endpoint",
   "src/serverFunctions/projects.ts:createProject":

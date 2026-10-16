@@ -12,6 +12,8 @@ import type { ErrorCode } from "@/shared/error-codes";
 export type DataforseoApiCallCost = {
   path: string[];
   costUsd: number;
+  /** Provider result_count, when the task reported one. */
+  resultCount?: number;
 };
 
 export type DataforseoApiResponse<T> = {
@@ -93,9 +95,11 @@ export interface DataforseoItemsTask<TItem> extends DataforseoTaskLike {
 function tryBuildTaskBilling(task: unknown): DataforseoApiCallCost | null {
   const parsed = billingMetadataSchema.safeParse(task);
   if (!parsed.success) return null;
+  const resultCount = parsed.data.result_count;
   return {
     path: parsed.data.path,
     costUsd: parsed.data.cost,
+    ...(typeof resultCount === "number" ? { resultCount } : {}),
   };
 }
 

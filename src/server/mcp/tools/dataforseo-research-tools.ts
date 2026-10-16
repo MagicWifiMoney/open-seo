@@ -891,7 +891,9 @@ export const getRankedKeywordsTool = {
     },
   },
   handler: withMcpProjectAuth(async (args: GetRankedKeywordsArgs, context) => {
-    const client = createDataforseoClient(context.billing);
+    const client = createDataforseoClient(context.billing, {
+      operation: "MCP: get_ranked_keywords",
+    });
     // Legacy includeSubdomains only ever selected between whole-host scopes
     // for bare domains; for page URLs it meant exact-page results. Mapping it
     // to domain/subdomains for a URL target would silently drop the path.
@@ -972,7 +974,9 @@ export const searchLocalBusinessesTool = {
   },
   handler: withMcpProjectAuth(
     async (args: SearchLocalBusinessesArgs, context) => {
-      const client = createDataforseoClient(context.billing);
+      const client = createDataforseoClient(context.billing, {
+        operation: "MCP: search_local_businesses",
+      });
       const rows = await client.business.businessListings({
         categories: args.categories,
         title: args.query,
@@ -1020,7 +1024,9 @@ export const getLocalSerpResultsTool = {
   },
   handler: withMcpProjectAuth(
     async (args: GetLocalSerpResultsArgs, context) => {
-      const client = createDataforseoClient(context.billing);
+      const client = createDataforseoClient(context.billing, {
+        operation: "MCP: get_local_serp_results",
+      });
       const rows = await client.serp.local({
         keyword: args.keyword,
         locationCoordinate: formatLocalSerpCoordinate({
@@ -1071,7 +1077,9 @@ export const getGoogleBusinessQuestionsTool = {
   handler: withMcpProjectAuth(
     async (args: GetGoogleBusinessQuestionsArgs, context) => {
       const identifier = resolveBusinessIdentifier(args);
-      const client = createDataforseoClient(context.billing);
+      const client = createDataforseoClient(context.billing, {
+        operation: "MCP: get_google_business_questions",
+      });
       const rows = await client.business.questionsAnswers({
         // The questions endpoint shares the cid:/place_id: keyword prefixes.
         keyword: businessIdentifierKeyword(identifier),
@@ -1114,7 +1122,9 @@ export const findSerpCompetitorsTool = {
   },
   handler: withMcpProjectAuth(
     async (args: FindSerpCompetitorsArgs, context) => {
-      const client = createDataforseoClient(context.billing);
+      const client = createDataforseoClient(context.billing, {
+        operation: "MCP: find_serp_competitors",
+      });
       const market = resolveMarketSelector(args, context.project);
       const competitors = await client.labs.serpCompetitors({
         keywords: args.keywords,
@@ -1177,7 +1187,9 @@ export const getKeywordMetricsTool = {
     // Assert against the RESOLVED pair: an explicit language with an omitted
     // location must validate against the project's default location.
     assertLanguageForLocation(locationCode, languageCode);
-    const client = createDataforseoClient(context.billing);
+    const client = createDataforseoClient(context.billing, {
+      operation: "MCP: get_keyword_metrics",
+    });
     const metrics = await fetchKeywordMetricsForList(client, {
       keywords: args.keywords,
       locationCode,

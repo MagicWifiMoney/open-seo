@@ -55,9 +55,10 @@ async function getBacklinks(
       const from = new Date(Date.now() - 7 * 86400_000)
         .toISOString()
         .slice(0, 10);
-      const response = await createDataforseoClient(
-        billingCustomer,
-      ).backlinks.rows({
+      const response = await createDataforseoClient(billingCustomer, {
+        source: "backlinks",
+        operation: `Dashboard backlinks: ${target.apiTarget}`,
+      }).backlinks.rows({
         target: target.apiTarget,
         includeSubdomains: true,
         limit: 25,
@@ -353,9 +354,10 @@ async function getLinkActivity(
       const from = new Date(Date.now() - 7 * 86400_000)
         .toISOString()
         .slice(0, 10);
-      const response = await createDataforseoClient(
-        billingCustomer,
-      ).backlinks.referringDomains({
+      const response = await createDataforseoClient(billingCustomer, {
+        source: "backlinks",
+        operation: `Dashboard referring domains: ${target}`,
+      }).backlinks.referringDomains({
         target,
         includeSubdomains: true,
         limit: 25,

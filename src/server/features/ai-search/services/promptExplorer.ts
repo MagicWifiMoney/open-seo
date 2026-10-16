@@ -58,7 +58,11 @@ export async function explorePrompt(
     billingCustomer.organizationId,
     "Prompt Explorer",
   );
-  const dataforseo = createDataforseoClient(billingCustomer);
+  const dataforseo = createDataforseoClient(billingCustomer, {
+    source: "ai_lookup",
+    operation: `Prompt explorer: ${input.prompt.slice(0, 80)}`,
+    requestSummary: { prompt: input.prompt, models: input.models },
+  });
   const highlightBrand = input.highlightBrand?.trim() || null;
 
   // Dedupe models so a request like ["claude","claude"] doesn't fan out to two

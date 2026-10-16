@@ -12,3 +12,4 @@ export * from "./gsc.schema";
 export * from "./telemetry.schema";
 export * from "./ai-visibility.schema";
 export * from "./metrics-history.schema";
+export * from "./cost-ledger.schema";

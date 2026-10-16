@@ -22,7 +22,11 @@ export async function refreshSavedKeywordMetrics(
 
   if (rows.length === 0) return { updated: 0 };
 
-  const client = createDataforseoClient(billingCustomer);
+  const client = createDataforseoClient(billingCustomer, {
+    source: "keyword_research",
+    operation: "Refresh saved keyword metrics",
+    requestSummary: { keywords: rows.length },
+  });
   let updated = 0;
 
   // Group by (locationCode, languageCode) so each provider call is homogeneous.

@@ -94,7 +94,11 @@ export async function profileBacklinksOverview(
     };
   }
 
-  const dataforseo = createDataforseoClient(billingCustomer);
+  const dataforseo = createDataforseoClient(billingCustomer, {
+    source: "backlinks",
+    operation: `Backlinks overview: ${input.target}`,
+    requestSummary: { target: input.target },
+  });
 
   const now = new Date();
   const normalizedTarget = normalizeBacklinksTarget(input.target, {
@@ -166,7 +170,11 @@ export async function profileBacklinksRowsPage(
     return cached.data;
   }
 
-  const dataforseo = createDataforseoClient(billingCustomer);
+  const dataforseo = createDataforseoClient(billingCustomer, {
+    source: "backlinks",
+    operation: `Backlinks rows: ${input.target}`,
+    requestSummary: { target: input.target },
+  });
   const offset = (input.page - 1) * input.pageSize;
 
   const target = normalizeBacklinksTarget(input.target, { scope: input.scope });
@@ -215,7 +223,11 @@ export async function profileReferringDomainsPage(
     return cached.data;
   }
 
-  const dataforseo = createDataforseoClient(billingCustomer);
+  const dataforseo = createDataforseoClient(billingCustomer, {
+    source: "backlinks",
+    operation: `Referring domains: ${input.target}`,
+    requestSummary: { target: input.target },
+  });
   const offset = (input.page - 1) * input.pageSize;
   const filters = buildReferringDomainsApiFilters(input.filters);
 
@@ -260,7 +272,11 @@ export async function profileTopPagesPage(
     return cached.data;
   }
 
-  const dataforseo = createDataforseoClient(billingCustomer);
+  const dataforseo = createDataforseoClient(billingCustomer, {
+    source: "backlinks",
+    operation: `Backlinks top pages: ${input.target}`,
+    requestSummary: { target: input.target },
+  });
   const offset = (input.page - 1) * input.pageSize;
 
   const target = normalizeBacklinksTarget(input.target, { scope: input.scope });
