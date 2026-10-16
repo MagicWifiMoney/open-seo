@@ -15,6 +15,7 @@ import { Spinner } from "@/client/components/ui/spinner";
 import { DataTableTabs } from "@/client/components/table/DataTableToolbar";
 import { TabsTrigger } from "@/client/components/ui/tabs";
 import { GoogleConnectionCard } from "@/client/features/integrations/GoogleConnectionCard";
+import { GscInsightsSection } from "@/client/features/search-performance/insights/GscInsightsSection";
 import { DimensionSection } from "@/client/features/search-performance/SearchPerformanceDimensionSection";
 import { SearchPerformanceSelects } from "@/client/features/search-performance/SearchPerformanceSelects";
 import { SearchPerformanceLoadingState } from "@/client/features/search-performance/SearchPerformanceLoadingState";
@@ -248,7 +249,7 @@ export function SearchPerformancePage({
             <GoogleConnectionCard provider="gsc" projectId={projectId} />
           </div>
         ) : (
-          <>
+          <GscInsightsSection projectId={projectId}>
             {reportQuery.isError ? reportError : null}
             {reportQuery.isPlaceholderData ? (
               <SearchPerformanceLoadingState />
@@ -346,7 +347,7 @@ export function SearchPerformancePage({
                 />
               )}
             </div>
-          </>
+          </GscInsightsSection>
         )}
       </div>
     </div>
