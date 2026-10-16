@@ -11,6 +11,16 @@ const words = (n: number, prefix = "new") =>
   Array.from({ length: n }, (_, i) => `${prefix}${i}`);
 
 describe("assertClientKeywordBudget", () => {
+  it("tags the refusal so the client shows the specific message", () => {
+    expect(() =>
+      assertClientKeywordBudget({ existing: [], incoming: words(21), now }),
+    ).toThrow(
+      expect.objectContaining({
+        code: "FORBIDDEN",
+        details: { reason: "SPEND_NOT_ALLOWED" },
+      }),
+    );
+  });
   it("allows up to 20 new keywords", () => {
     expect(() =>
       assertClientKeywordBudget({ existing: [], incoming: words(20), now }),

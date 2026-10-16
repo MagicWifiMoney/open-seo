@@ -67,15 +67,16 @@ describe("clientTurnRefusal", () => {
   });
 });
 
+const turn = () => ({
+  continuation: false,
+  refusal: null as string | null,
+});
+
 describe("samClientTurnRefusal", () => {
   it("records client_cap on the turn and skips continuations", async () => {
     const store = memoryStore();
     const env = { KV: store, SAM_CLIENT_DAILY_TURNS: "1" };
     const auth = { role: "client", userId: "u" };
-    const turn = () => ({
-      continuation: false,
-      refusal: null as string | null,
-    });
     expect(await samClientTurnRefusal(auth, env, turn())).toBeNull();
     const capped = turn();
     expect(await samClientTurnRefusal(auth, env, capped)).toBe(

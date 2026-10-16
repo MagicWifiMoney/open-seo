@@ -19,6 +19,18 @@ describe("toClientError", () => {
       ),
       message: "AUTH_CONFIG_MISSING",
     },
+    {
+      label: "forwards the specific spend-gate message verbatim",
+      error: new AppError("FORBIDDEN", "You can add up to 20 keywords a day.", {
+        reason: "SPEND_NOT_ALLOWED",
+      }),
+      message: "You can add up to 20 keywords a day.",
+    },
+    {
+      label: "keeps a plain FORBIDDEN as the bare code",
+      error: new AppError("FORBIDDEN", "Your organization role is wrong."),
+      message: "FORBIDDEN",
+    },
   ])("$label", ({ error, message }) => {
     expect(toClientError(error).message).toBe(message);
   });

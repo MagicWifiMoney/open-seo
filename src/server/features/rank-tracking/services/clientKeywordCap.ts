@@ -1,3 +1,4 @@
+import { SPEND_NOT_ALLOWED_REASON } from "@/server/auth/spendFunctions";
 import { AppError } from "@/server/lib/errors";
 
 // Roles without research:spend can add tracking keywords, but every keyword on
@@ -36,7 +37,7 @@ export function assertClientKeywordBudget(input: {
   ).length;
   if (recent + fresh.size > CLIENT_KEYWORDS_PER_DAY) {
     throw new AppError("FORBIDDEN", CLIENT_KEYWORD_CAP_MESSAGE, {
-      reason: "KEYWORD_DAILY_CAP",
+      reason: SPEND_NOT_ALLOWED_REASON,
     });
   }
 }
