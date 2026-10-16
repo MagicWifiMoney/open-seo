@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useId, useState } from "react";
 import { projectsQueryOptions } from "@/client/features/projects/projectQueries";
 import { useQuery } from "@tanstack/react-query";
@@ -152,6 +153,7 @@ function RankTrackingConfigModalContent({
   onConfigCreated,
 }: Props & { initialMarket: ProjectMarket }) {
   const countryId = useId();
+  const canSpend = useCanSpend();
   const isEdit = !!existingConfig;
   const scheduledChecksPaused =
     SCHEDULED_RANK_CHECKS_PAUSED && isHostedClientAuthMode();
@@ -326,7 +328,7 @@ function RankTrackingConfigModalContent({
                     />
                   )}
                 </form.AppField>
-                {values.devices === "both" && (
+                {values.devices === "both" && canSpend && (
                   <p className="flex items-start gap-1.5 text-xs text-info">
                     <Info className="mt-0.5 size-3.5 shrink-0" />
                     Tracking both devices uses 2x credits per keyword check
@@ -385,7 +387,11 @@ function RankTrackingConfigModalContent({
                   Cancel
                 </Button>
                 <form.SubmitButton>
-                  {isEdit ? "Save Changes" : "Add Domain"}
+                  {isEdit
+                    ? "Save Changes"
+                    : canSpend
+                      ? "Add Domain"
+                      : "Create (checks run on schedule)"}
                 </form.SubmitButton>
               </DialogFooter>
             </form.Form>

@@ -1,3 +1,5 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
+import { SpendLockedNotice } from "@/client/components/SpendLockedNotice";
 import { GoogleSearchConsoleLogo } from "@/client/features/integrations/GoogleProductLogos";
 import { startAudit } from "@/serverFunctions/audit";
 import { QueryError } from "@/client/components/QueryState";
@@ -162,6 +164,7 @@ export function AuditHealthCard({
   domain: string | null;
 }) {
   const queryClient = useQueryClient();
+  const canSpend = useCanSpend();
   const scan = useMutation({
     mutationFn: () =>
       startAudit({
@@ -188,7 +191,9 @@ export function AuditHealthCard({
             Scan up to 50 pages for broken links, missing titles and pages
             Google can't index.
           </p>
-          {domain ? (
+          {!canSpend ? (
+            <SpendLockedNotice compact />
+          ) : domain ? (
             <Button disabled={scan.isPending} onClick={() => scan.mutate()}>
               {scan.isPending ? "Starting scan…" : "Scan my website"}
             </Button>

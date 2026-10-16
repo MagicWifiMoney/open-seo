@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
@@ -59,6 +60,7 @@ export function TrackerEditor({
   onSaved: (state: AiTrackerState, run?: AiRun) => void;
 }) {
   const adding = mode === TrackerEditorMode.Prompts;
+  const canSpend = useCanSpend();
   const [generating, setGenerating] = useState(false);
   const [review, setReview] = useState<TrackerSetupReviewData | null>(null);
   const [validationError, setValidationError] = useState<Error | null>(null);
@@ -182,7 +184,8 @@ export function TrackerEditor({
             creating={!state.tracker}
             pending={save.isPending}
             error={save.error}
-            canSchedule={state.providerConfigured}
+            canSchedule={state.providerConfigured && canSpend}
+            spendLocked={!canSpend}
             scheduling={save.variables?.scheduleWeekly ?? false}
             onBack={() => {
               setReview(null);
@@ -225,17 +228,19 @@ export function TrackerEditor({
                           onChange={field.handleChange}
                           onGeneratingChange={setGenerating}
                         />
-                        <p className="text-xs text-muted-foreground">
-                          Manage the active AI engines and country in{" "}
-                          <button
-                            type="button"
-                            className="text-foreground underline underline-offset-4"
-                            onClick={onManageTracking}
-                          >
-                            Tracking settings
-                          </button>
-                          .
-                        </p>
+                        {canSpend && (
+                          <p className="text-xs text-muted-foreground">
+                            Manage the active AI engines and country in{" "}
+                            <button
+                              type="button"
+                              className="text-foreground underline underline-offset-4"
+                              onClick={onManageTracking}
+                            >
+                              Tracking settings
+                            </button>
+                            .
+                          </p>
+                        )}
                       </>
                     )}
                     {!adding && (

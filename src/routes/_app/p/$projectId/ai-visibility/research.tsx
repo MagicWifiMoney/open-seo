@@ -1,3 +1,4 @@
+import { SpendGate } from "@/client/components/SpendLockedNotice";
 import { createFileRoute } from "@tanstack/react-router";
 import { Link2, ListPlus, MessagesSquare } from "lucide-react";
 import { z } from "zod";
@@ -9,7 +10,7 @@ export const Route = createFileRoute(
   "/_app/p/$projectId/ai-visibility/research",
 )({
   validateSearch: z.object({ q: z.string().trim().max(100).optional() }),
-  component: AiResearchRoute,
+  component: GuardedAiResearchRoute,
 });
 
 const PROMPT_RESEARCH_FEATURES = [
@@ -42,5 +43,15 @@ function AiResearchRoute() {
     >
       <PromptResearchPage key={projectId} projectId={projectId} keyword={q} />
     </PaidPlanGate>
+  );
+}
+
+// Paid lookups fire as soon as this page mounts, so a role that cannot spend
+// gets the notice and never mounts it.
+function GuardedAiResearchRoute() {
+  return (
+    <SpendGate>
+      <AiResearchRoute />
+    </SpendGate>
   );
 }

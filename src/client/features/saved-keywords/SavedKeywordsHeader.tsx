@@ -4,6 +4,7 @@ import { ConfirmDialog } from "@/client/components/ConfirmDialog";
 import { ExportMenu } from "@/client/components/ExportMenu";
 import { PageHeader } from "@/client/components/PageHeader";
 import { Button } from "@/client/components/ui/button";
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 
 export function SavedKeywordsHeader({
   totalCount,
@@ -21,6 +22,7 @@ export function SavedKeywordsHeader({
   onRefreshMetrics: () => void;
 }) {
   const [confirmingRefresh, setConfirmingRefresh] = useState(false);
+  const canSpend = useCanSpend();
   const disabled = totalCount === 0 || exporting != null;
 
   return (
@@ -30,19 +32,21 @@ export function SavedKeywordsHeader({
         description="Save keyword ideas from research, organize them with tags, and revisit when you're ready to act."
         actions={
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              title="Fetch new volume, difficulty, and CPC"
-              disabled={disabled || metricsRefreshing}
-              onClick={() => setConfirmingRefresh(true)}
-            >
-              <RefreshCw
-                data-icon="inline-start"
-                className={metricsRefreshing ? "animate-spin" : ""}
-              />
-              {metricsRefreshing ? "Updating..." : "Update keyword stats"}
-            </Button>
+            {canSpend ? (
+              <Button
+                variant="outline"
+                size="sm"
+                title="Fetch new volume, difficulty, and CPC"
+                disabled={disabled || metricsRefreshing}
+                onClick={() => setConfirmingRefresh(true)}
+              >
+                <RefreshCw
+                  data-icon="inline-start"
+                  className={metricsRefreshing ? "animate-spin" : ""}
+                />
+                {metricsRefreshing ? "Updating..." : "Update keyword stats"}
+              </Button>
+            ) : null}
 
             <ExportMenu
               actions={["sheets", "csv"]}

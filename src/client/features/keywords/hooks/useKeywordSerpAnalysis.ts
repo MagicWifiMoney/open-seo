@@ -17,6 +17,7 @@ export function useKeywordSerpAnalysis(
   projectId: string,
   locationCode: number | undefined,
   locationName: string | undefined,
+  canSpend: boolean,
 ) {
   const [serpKeyword, setSerpKeywordState] = useState<string | null>(null);
   const [serpPage, setSerpPageState] = useState(0);
@@ -63,7 +64,7 @@ export function useKeywordSerpAnalysis(
     retry: false,
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
-    enabled: !!serpKeyword,
+    enabled: !!serpKeyword && canSpend,
   });
 
   const { refetch: refetchSerp } = serpQuery;

@@ -1,3 +1,5 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
+import { SpendLockedNotice } from "@/client/components/SpendLockedNotice";
 import { ConfirmDialog } from "@/client/components/ConfirmDialog";
 import { PageHeader } from "@/client/components/PageHeader";
 import { AuditHistorySection } from "@/client/features/audit/launch/AuditHistorySection";
@@ -19,6 +21,7 @@ export function LaunchView({
   // The plan only sets the page limit, so the form stays usable while the
   // plan loads. The server enforces the limit regardless.
   const isFreePlan = useHostedPlanGate() === "free";
+  const canSpend = useCanSpend();
   const controller = useLaunchController({
     projectId,
     initialUrl,
@@ -31,13 +34,17 @@ export function LaunchView({
       <div className="mx-auto max-w-7xl space-y-4">
         <PageHeader title="Site Audit" />
 
-        <LaunchFormCard
-          launchForm={controller.launchForm}
-          commitMaxPagesInput={controller.commitMaxPagesInput}
-          maxPagesLimit={controller.maxPagesLimit}
-          paidMaxPagesLimit={controller.paidMaxPagesLimit}
-          canRenderJavaScript={controller.canRenderJavaScript}
-        />
+        {canSpend ? (
+          <LaunchFormCard
+            launchForm={controller.launchForm}
+            commitMaxPagesInput={controller.commitMaxPagesInput}
+            maxPagesLimit={controller.maxPagesLimit}
+            paidMaxPagesLimit={controller.paidMaxPagesLimit}
+            canRenderJavaScript={controller.canRenderJavaScript}
+          />
+        ) : (
+          <SpendLockedNotice />
+        )}
 
         <AuditHistorySection
           projectId={projectId}

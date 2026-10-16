@@ -20,6 +20,7 @@ export function AddKeywordsPanel({
     added: number;
     checkTriggered: boolean;
     checkScheduledSoon: boolean;
+    spendSkipped: boolean;
   }) => void;
   onCancel: () => void;
 }) {

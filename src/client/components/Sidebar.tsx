@@ -4,7 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type ComponentType } from "react";
 import { toast } from "sonner";
 import { ArrowLeftRight, Check, LogOut, Settings, User } from "lucide-react";
-import { organizationContextQueryOptions } from "@/client/features/team/organizationQueries";
+import {
+  organizationContextQueryOptions,
+  useCanSpend,
+} from "@/client/features/team/organizationQueries";
 import { switchOrganization } from "@/serverFunctions/organization";
 import { clearLastProjectId } from "@/client/lib/active-project";
 import {
@@ -118,11 +121,14 @@ export function Sidebar({
   // Until a project is known, show the project nav as rows without links, so
   // the sidebar has its full shape from the first paint instead of growing
   // once projects load. The placeholder rows never render these links.
+  const canSpend = useCanSpend();
   const navPlaceholder = projectId === null && projectPending;
   const navGroups =
     projectId !== null || navPlaceholder
-      ? getProjectNavGroups(projectId ?? "")
-      : [connectNavGroup];
+      ? getProjectNavGroups(projectId ?? "", canSpend)
+      : canSpend
+        ? [connectNavGroup]
+        : [];
   const { pathname } = useLocation();
   const { setOpenMobile } = useSidebar();
   // SAM is hidden from navigation: the chat route is only reachable by URL,
@@ -206,6 +212,7 @@ function AccountFooter({ ready }: { ready: boolean }) {
   });
   const organizations = orgContextQuery.data?.organizations ?? [];
   const activeOrganizationId = orgContextQuery.data?.organizationId;
+  const canSpend = useCanSpend();
 
   async function handleSwitchOrganization(organizationId: string) {
     if (isSwitching || organizationId === activeOrganizationId) return;
@@ -272,14 +279,19 @@ function AccountFooter({ ready }: { ready: boolean }) {
                     <DropdownMenuSeparator />
                   </>
                 ) : null}
-                <DropdownMenuItem
-                  render={
-                    <Link to="/settings" onClick={() => setOpenMobile(false)} />
-                  }
-                >
-                  <Settings className="size-4" />
-                  Settings
-                </DropdownMenuItem>
+                {canSpend ? (
+                  <DropdownMenuItem
+                    render={
+                      <Link
+                        to="/settings"
+                        onClick={() => setOpenMobile(false)}
+                      />
+                    }
+                  >
+                    <Settings className="size-4" />
+                    Settings
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuGroup>
                   <DropdownMenuLabel>Theme</DropdownMenuLabel>
                   <div className="px-1 pb-1">

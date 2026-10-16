@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -169,6 +170,7 @@ export function KeywordSuggestionStep({
   // The tracker's language is deliberately not sent — rank tracking can pair
   // any SERP language with any country, and the server resolves a Labs-served
   // language for this country (resolveLabsMarket in serverFunctions/domain.ts).
+  const canSpend = useCanSpend();
   const labsSupported = isLabsLocationCode(locationCode);
   const suggestionsQuery = useQuery({
     queryKey: ["domainKeywordSuggestions", projectId, domain, locationCode],
@@ -176,7 +178,7 @@ export function KeywordSuggestionStep({
       getDomainKeywordSuggestions({
         data: { projectId, domain, locationCode },
       }),
-    enabled: labsSupported,
+    enabled: labsSupported && canSpend,
   });
 
   const data = suggestionsQuery.data ?? [];
@@ -231,12 +233,16 @@ export function KeywordSuggestionStep({
     }
   };
 
-  if (!labsSupported) {
+  if (!labsSupported || !canSpend) {
     return (
       <>
         <StepHeader
           title="Add keywords manually"
-          description="Ranked-keyword suggestions aren't available for this country. Continue and add the keywords you want to track manually."
+          description={
+            canSpend
+              ? "Ranked-keyword suggestions aren't available for this country. Continue and add the keywords you want to track manually."
+              : "Ranked-keyword suggestions use research credits. Continue and add the keywords you want to track manually."
+          }
         />
         <DialogFooter>
           <Button onClick={onClose}>Continue</Button>

@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -16,6 +17,7 @@ export function useTrackerSetupSave({
   projectId: string;
   onSaved: (state: AiTrackerState, run?: AiRun) => void;
 }) {
+  const canSpend = useCanSpend();
   return useMutation({
     mutationFn: async ({
       accepted,
@@ -27,7 +29,8 @@ export function useTrackerSetupSave({
       const result = await saveAiVisibilityTracker({
         data: { projectId, ...accepted.patch },
       });
-      if (!scheduleWeekly) return { state: result.state };
+      // Scheduling collects data, which spends credits.
+      if (!scheduleWeekly || !canSpend) return { state: result.state };
       try {
         // A first schedule also collects a baseline now.
         const scheduled = await setAiVisibilitySchedule({

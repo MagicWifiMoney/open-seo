@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useId } from "react";
 import { useMutation } from "@tanstack/react-query";
 import Papa from "papaparse";
@@ -29,6 +30,7 @@ export function TrackerPromptFields({
   onGeneratingChange: (pending: boolean) => void;
 }) {
   const promptsId = useId();
+  const canSpend = useCanSpend();
   const group = value.topic;
   const topicPrompts = state.prompts.filter(
     (prompt) => !prompt.archived && prompt.topic === group.name,
@@ -89,24 +91,26 @@ export function TrackerPromptFields({
       <Field aria-label="Prompts to track">
         <div className="flex items-center justify-between gap-3">
           <FieldLabel htmlFor={`${promptsId}-0`}>Prompts to track</FieldLabel>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={
-              generate.isPending ||
-              group.prompts.filter((text) => text.trim()).length >=
-                MAX_PROMPTS_PER_ADDITION
-            }
-            onClick={() => generate.mutate()}
-          >
-            {generate.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Sparkles className="size-4" />
-            )}
-            {generate.isPending ? "Generating…" : "Generate"}
-          </Button>
+          {canSpend && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={
+                generate.isPending ||
+                group.prompts.filter((text) => text.trim()).length >=
+                  MAX_PROMPTS_PER_ADDITION
+              }
+              onClick={() => generate.mutate()}
+            >
+              {generate.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Sparkles className="size-4" />
+              )}
+              {generate.isPending ? "Generating…" : "Generate"}
+            </Button>
+          )}
         </div>
         <div className="space-y-2">
           {group.prompts.map((text, index) => (

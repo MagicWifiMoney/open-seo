@@ -1,3 +1,4 @@
+import { SpendLockedNotice } from "@/client/components/SpendLockedNotice";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/client/components/ui/button";
 import { DialogFooter } from "@/client/components/ui/dialog";
@@ -18,6 +19,7 @@ export function TrackerSetupReview({
   pending,
   error,
   canSchedule,
+  spendLocked = false,
   scheduling,
   onBack,
   onSave,
@@ -30,6 +32,8 @@ export function TrackerSetupReview({
   pending: boolean;
   error: unknown;
   canSchedule: boolean;
+  /** The role cannot spend credits: no cost figures, no scheduling. */
+  spendLocked?: boolean;
   scheduling: boolean;
   onBack: () => void;
   onSave: () => void;
@@ -40,11 +44,13 @@ export function TrackerSetupReview({
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         Review your changes before saving.{" "}
-        {enabled
-          ? "These settings apply to your enabled schedule."
-          : creating
-            ? "Tracking runs weekly. The first check is a week from now; use Run now for results sooner."
-            : "Track weekly to collect fresh answers once a week. A tracker that has never run on a schedule also runs its first check now."}
+        {spendLocked
+          ? "Your prompts are saved with the tracker."
+          : enabled
+            ? "These settings apply to your enabled schedule."
+            : creating
+              ? "Tracking runs weekly. The first check is a week from now; use Run now for results sooner."
+              : "Track weekly to collect fresh answers once a week. A tracker that has never run on a schedule also runs its first check now."}
       </p>
       <dl className="grid grid-cols-2 gap-4 rounded-lg border p-4 text-sm border-border">
         {review.patch.engines && (
@@ -97,17 +103,21 @@ export function TrackerSetupReview({
           ))}
         </div>
       )}
-      <div className="space-y-1 rounded-lg bg-muted/60 p-4 text-sm">
-        <p>
-          Each run collects <strong>{review.estimate.observations}</strong>{" "}
-          {review.estimate.observations === 1 ? "answer" : "answers"} for{" "}
-          <strong>{aiMoney(review.estimate.costUsd)}</strong>
-        </p>
-        <p>
-          <strong>{aiMoney(review.estimate.monthlyCostUsd)}</strong> estimated
-          per month if it runs {review.estimate.scheduleInterval}.
-        </p>
-      </div>
+      {spendLocked ? (
+        <SpendLockedNotice compact />
+      ) : (
+        <div className="space-y-1 rounded-lg bg-muted/60 p-4 text-sm">
+          <p>
+            Each run collects <strong>{review.estimate.observations}</strong>{" "}
+            {review.estimate.observations === 1 ? "answer" : "answers"} for{" "}
+            <strong>{aiMoney(review.estimate.costUsd)}</strong>
+          </p>
+          <p>
+            <strong>{aiMoney(review.estimate.monthlyCostUsd)}</strong> estimated
+            per month if it runs {review.estimate.scheduleInterval}.
+          </p>
+        </div>
+      )}
       {!!error && <AiQueryError error={error} />}
       <DialogFooter>
         <Button
@@ -129,11 +139,13 @@ export function TrackerSetupReview({
           )}
           {enabled
             ? "Save reviewed changes"
-            : creating
-              ? "Save and track weekly"
-              : "Save as paused"}
+            : spendLocked
+              ? "Save prompts"
+              : creating
+                ? "Save and track weekly"
+                : "Save as paused"}
         </Button>
-        {paused && (
+        {paused && !spendLocked && (
           <Button
             type="button"
             disabled={

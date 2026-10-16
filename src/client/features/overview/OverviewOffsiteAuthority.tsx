@@ -8,6 +8,8 @@ import {
   listOffsiteSnapshots,
   saveOffsiteSnapshot,
 } from "@/serverFunctions/offsite";
+import { SpendLockedNotice } from "@/client/components/SpendLockedNotice";
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { OverviewOutreachLog } from "./OverviewOutreachLog";
 import {
   formatCheckedAt,
@@ -24,6 +26,7 @@ export function OverviewOffsiteAuthority({ projectId }: { projectId: string }) {
     queryFn: () => getDashboardActivation({ data: { projectId } }),
   });
   const domain = activation.data?.domain ?? null;
+  const canSpend = useCanSpend();
 
   const queryClient = useQueryClient();
   const historyKey = ["offsiteSnapshots", projectId];
@@ -75,6 +78,8 @@ export function OverviewOffsiteAuthority({ projectId }: { projectId: string }) {
             <p className="text-sm text-muted-foreground">
               No website is set for this project, so there is nothing to check.
             </p>
+          ) : !canSpend ? (
+            <SpendLockedNotice />
           ) : (
             <>
               <p className="text-sm text-muted-foreground">
@@ -163,8 +168,10 @@ export function OverviewOffsiteAuthority({ projectId }: { projectId: string }) {
               <p className="text-sm text-muted-foreground">Loading...</p>
             ) : months.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No snapshots saved yet. Click Check referring domains now to
-                save the first one.
+                No snapshots saved yet.
+                {canSpend
+                  ? " Click Check referring domains now to save the first one."
+                  : ""}
               </p>
             ) : (
               <div className="overflow-x-auto">

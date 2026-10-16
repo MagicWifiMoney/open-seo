@@ -2,6 +2,7 @@ import { Popover } from "@base-ui/react/popover";
 import { Info } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { getStandardErrorMessage } from "@/client/lib/error-messages";
 import { safeHttpUrl } from "@/shared/safe-url";
 export function Freshness({
@@ -12,6 +13,7 @@ export function Freshness({
   stale: boolean;
   refreshError: string | null;
 }) {
+  const canSpend = useCanSpend();
   if (!stale && !refreshError) return null;
   return (
     <p role="status" className="text-xs text-muted-foreground">
@@ -19,7 +21,7 @@ export function Freshness({
       {refreshError
         ? ` · ${getStandardErrorMessage(new Error(refreshError), "Could not update. Showing saved results.")}`
         : ""}
-      {refreshError === "INSUFFICIENT_CREDITS" ? (
+      {refreshError === "INSUFFICIENT_CREDITS" && canSpend ? (
         <Link to="/billing" className="ml-2 text-primary underline">
           Add credits
         </Link>

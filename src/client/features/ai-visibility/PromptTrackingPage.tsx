@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { DataforseoSpendCard } from "@/client/features/rank-tracking/DataforseoSpendCard";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -100,6 +101,7 @@ function PromptTrackingContent({
   defaultMarket: ProjectMarket;
 }) {
   const queryClient = useQueryClient();
+  const canSpend = useCanSpend();
   const [editorMode, setEditorMode] = useState<TrackerEditorMode | null>(null);
   const [managingTracking, setManagingTracking] = useState(false);
   const [selectedRun, setSelectedRun] = useState<AiRun | null>(null);
@@ -148,9 +150,18 @@ function PromptTrackingContent({
   // change, so the dialog opens on the current price.
   const engines = state.engines.join();
   useEffect(() => {
-    if (tracker) prefetchRunNowCost(queryClient, projectId, tracker);
-  }, [queryClient, projectId, tracker, activePrompts.length, engines]);
-  const schedule = tracker && (
+    if (tracker && canSpend)
+      prefetchRunNowCost(queryClient, projectId, tracker);
+  }, [
+    queryClient,
+    projectId,
+    tracker,
+    canSpend,
+    activePrompts.length,
+    engines,
+  ]);
+  // Schedule changes go through a cost review, which spends.
+  const schedule = tracker && canSpend && (
     <TrackingScheduleSummary
       tracker={tracker}
       canSchedule={
@@ -207,39 +218,23 @@ function PromptTrackingContent({
                 </div>
                 {/* Next to the schedule badge, like Configure in rank tracking. */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setEditorMode(TrackerEditorMode.Settings)}
-                  >
-                    <Settings2 />
-                    Tracking settings
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={
-                      !state.providerConfigured ||
-                      activePrompts.length === 0 ||
-                      busy
-                    }
-                    onClick={() => setCostMode("check")}
-                  >
-                    <Play />
-                    Run now
-                  </Button>
+                  {canSpend && (
+                    <TrackerSpendActions
+                      runDisabled={
+                        !state.providerConfigured ||
+                        activePrompts.length === 0 ||
+                        busy
+                      }
+                      onSettings={() =>
+                        setEditorMode(TrackerEditorMode.Settings)
+                      }
+                      onRun={() => setCostMode("check")}
+                    />
+                  )}
                 </div>
               </div>
               <RunStatusLine run={progress.run} tracker={tracker} />
-              {tracker?.lastSkipReason === "INSUFFICIENT_CREDITS" ? (
-                <InsufficientCreditsError variant="inline" />
-              ) : (
-                tracker?.lastSkipReason && (
-                  <p className="text-xs text-warning">
-                    Most recent scheduling notice: {tracker.lastSkipReason}
-                  </p>
-                )
-              )}
+              <SkipNotice tracker={tracker} canSpend={canSpend} />
             </div>
             <VisibilityTrend projectId={projectId} collecting={busy} />
             <PromptTrackingTabs projectId={projectId} tab={tab} />
@@ -290,7 +285,7 @@ function PromptTrackingContent({
           onSaved={saved}
         />
       )}
-      {managingTracking && (
+      {canSpend && managingTracking && (
         <TrackerEditor
           projectId={projectId}
           state={state}
@@ -304,7 +299,7 @@ function PromptTrackingContent({
           }}
         />
       )}
-      {costMode && tracker && (
+      {canSpend && costMode && tracker && (
         <TrackingCostReview
           projectId={projectId}
           tracker={tracker}
@@ -349,5 +344,53 @@ function PromptTrackingContent({
         />
       )}
     </div>
+  );
+}
+
+// Tracking settings and Run now both lead to credit spending.
+function TrackerSpendActions({
+  runDisabled,
+  onSettings,
+  onRun,
+}: {
+  runDisabled: boolean;
+  onSettings: () => void;
+  onRun: () => void;
+}) {
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={onSettings}>
+        <Settings2 />
+        Tracking settings
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={runDisabled}
+        onClick={onRun}
+      >
+        <Play />
+        Run now
+      </Button>
+    </>
+  );
+}
+
+function SkipNotice({
+  tracker,
+  canSpend,
+}: {
+  tracker: AiTrackerState["tracker"];
+  canSpend: boolean;
+}) {
+  // Credit shortfalls are not the client role's to fix.
+  if (!canSpend || !tracker?.lastSkipReason) return null;
+  if (tracker.lastSkipReason === "INSUFFICIENT_CREDITS") {
+    return <InsufficientCreditsError variant="inline" />;
+  }
+  return (
+    <p className="text-xs text-warning">
+      Most recent scheduling notice: {tracker.lastSkipReason}
+    </p>
   );
 }

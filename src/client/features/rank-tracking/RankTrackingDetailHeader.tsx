@@ -34,6 +34,7 @@ export function RankTrackingDetailHeader({
   config,
   run,
   costEstimate,
+  canConfigure,
   hasBothDevices,
   activeDevice,
   onActiveDeviceChange,
@@ -45,6 +46,8 @@ export function RankTrackingDetailHeader({
   config: RankTrackingConfig;
   run: { lastCheckedAt: string | null } | null | undefined;
   costEstimate: { keywordCount: number; costUsd: number } | undefined;
+  /** Editing a tracker saves through a spending call; hidden for clients. */
+  canConfigure: boolean;
   hasBothDevices: boolean;
   activeDevice: "desktop" | "mobile";
   onActiveDeviceChange: (v: "desktop" | "mobile") => void;
@@ -139,10 +142,12 @@ export function RankTrackingDetailHeader({
           </SelectContent>
         </Select>
         <div className="hidden h-6 w-px bg-border sm:block" />
-        <Button variant="outline" size="sm" onClick={onEdit}>
-          <Settings data-icon="inline-start" />
-          Configure
-        </Button>
+        {canConfigure && (
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            <Settings data-icon="inline-start" />
+            Configure
+          </Button>
+        )}
         <Button size="sm" onClick={onToggleAddKeywords}>
           <Plus data-icon="inline-start" />
           Add Keywords

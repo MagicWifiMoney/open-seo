@@ -1,3 +1,4 @@
+import { SpendGate } from "@/client/components/SpendLockedNotice";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BacklinksPage } from "@/client/features/backlinks/BacklinksPage";
 import {
@@ -8,7 +9,7 @@ import { defaultScopeForInput } from "@/shared/researchScope";
 
 export const Route = createFileRoute("/_app/p/$projectId/backlinks")({
   validateSearch: backlinksSearchSchema,
-  component: BacklinksRoute,
+  component: GuardedBacklinksRoute,
 });
 
 function BacklinksRoute() {
@@ -44,5 +45,15 @@ function BacklinksRoute() {
         includeSpam,
       }}
     />
+  );
+}
+
+// Paid lookups fire as soon as this page mounts, so a role that cannot spend
+// gets the notice and never mounts it.
+function GuardedBacklinksRoute() {
+  return (
+    <SpendGate>
+      <BacklinksRoute />
+    </SpendGate>
   );
 }

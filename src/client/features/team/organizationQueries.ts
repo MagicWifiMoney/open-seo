@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { hasOrgPermission } from "@/lib/org-permissions";
+import { canSpend, hasOrgPermission } from "@/lib/org-permissions";
 import { getOrganizationContext } from "@/serverFunctions/organization";
 
 export const organizationContextQueryOptions = () =>
@@ -16,4 +16,21 @@ export const organizationContextQueryOptions = () =>
 export function useCanManageBilling() {
   const { data } = useQuery(organizationContextQueryOptions());
   return data ? hasOrgPermission(data.role, { billing: ["manage"] }) : true;
+}
+
+// Same loading choice as useCanManageBilling: undefined until the context
+// loads. The server gate (requireSpend) is the real enforcement.
+export function useOrgRole(): string | undefined {
+  const { data } = useQuery(organizationContextQueryOptions());
+  return data?.role;
+}
+
+// True while the role is unknown, so owners never see a flash of the locked
+// notice. Cosmetic only: every spending server function re-checks canSpend.
+export function canSpendForRole(role: string | undefined): boolean {
+  return role === undefined ? true : canSpend(role);
+}
+
+export function useCanSpend() {
+  return canSpendForRole(useOrgRole());
 }

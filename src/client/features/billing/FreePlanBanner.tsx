@@ -2,15 +2,20 @@ import { Link } from "@tanstack/react-router";
 import { AppBanner } from "@/client/layout/AppBanner";
 import { BASE_PLAN_OFFER } from "@/client/features/billing/plan-offers";
 import { useCreditBalance } from "@/client/features/billing/useCreditBalance";
-import { useCanManageBilling } from "@/client/features/team/organizationQueries";
+import {
+  useCanManageBilling,
+  useCanSpend,
+} from "@/client/features/team/organizationQueries";
 import { BILLING_ROUTE, SUBSCRIBE_ROUTE } from "@/shared/billing";
 
 export function FreePlanBanner() {
   const { accountQuery, isFreePlan, isOutOfCredits, isLowCredits, refillDate } =
     useCreditBalance();
   const canManageBilling = useCanManageBilling();
+  const canSpend = useCanSpend();
 
-  if (!accountQuery.data) {
+  // Roles that cannot spend never see credit balances, upgrades or top-ups.
+  if (!accountQuery.data || !canSpend) {
     return null;
   }
 

@@ -14,6 +14,7 @@ import { usePreferredKeywordGrouping } from "@/client/features/keywords/hooks/us
 import { useLocalKeywordFilters } from "@/client/features/keywords/hooks/useLocalKeywordFilters";
 import { useKeywordResearchData } from "@/client/features/keywords/hooks/useKeywordResearchData";
 import { useKeywordSerpAnalysis } from "@/client/features/keywords/hooks/useKeywordSerpAnalysis";
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { captureClientEvent } from "@/client/lib/posthog";
 import { useSearchHistory } from "@/client/hooks/useSearchHistory";
 import {
@@ -70,6 +71,10 @@ export function useKeywordResearchController(
     locationCode,
     setPreferredLocationCode,
   } = input;
+  const canSpend = useCanSpend();
+  // A non-spending role submitting a search sees the notice instead of a
+  // request; cleared again once a spending role is back (org switch).
+  const [spendBlockedSubmit, setSpendBlockedSubmit] = useState(false);
   const {
     groupKeywords: preferredGroupKeywords,
     setGroupKeywords: setPreferredGroupKeywords,
@@ -97,7 +102,12 @@ export function useKeywordResearchController(
     retrySerp,
     serpError,
     serpRetrying,
-  } = useKeywordSerpAnalysis(input.projectId, locationCode, input.locationName);
+  } = useKeywordSerpAnalysis(
+    input.projectId,
+    locationCode,
+    input.locationName,
+    canSpend,
+  );
 
   const {
     history,
@@ -129,6 +139,7 @@ export function useKeywordResearchController(
       mode: input.keywordMode,
       clickstream: input.clickstream,
       groupKeywords,
+      canSpend,
     },
     addSearch,
   );
@@ -164,6 +175,10 @@ export function useKeywordResearchController(
       locationCode: displayedLocationCode,
     },
     (value) => {
+      if (!canSpend) {
+        setSpendBlockedSubmit(true);
+        return;
+      }
       setPreferredLocationCode(value.locationCode);
       onFormSubmit({ ...value, groupKeywords: preferredGroupKeywords });
     },
@@ -257,6 +272,9 @@ export function useKeywordResearchController(
   };
 
   return {
+    canSpend,
+    // Also true for a URL that already carries a search, which never fires.
+    showSpendLockedNotice: !canSpend && (spendBlockedSubmit || hasSearched),
     preferredGroupKeywords,
     setPreferredGroupKeywords,
     activeFilterCount,

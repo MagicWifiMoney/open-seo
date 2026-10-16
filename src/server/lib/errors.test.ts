@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import {
+  SPEND_NOT_ALLOWED_MESSAGE,
+  SPEND_NOT_ALLOWED_REASON,
+} from "@/server/auth/spendFunctions";
 import { AppError, toClientError } from "@/server/lib/errors";
 
 describe("toClientError", () => {
@@ -18,6 +22,18 @@ describe("toClientError", () => {
         "TEAM_DOMAIN must be a full https URL like https://your-team.cloudflareaccess.com",
       ),
       message: "AUTH_CONFIG_MISSING",
+    },
+    {
+      label: "passes the constant spend-gate copy through",
+      error: new AppError("FORBIDDEN", SPEND_NOT_ALLOWED_MESSAGE, {
+        reason: SPEND_NOT_ALLOWED_REASON,
+      }),
+      message: SPEND_NOT_ALLOWED_MESSAGE,
+    },
+    {
+      label: "keeps a plain FORBIDDEN as the bare code",
+      error: new AppError("FORBIDDEN", "Your organization role is wrong."),
+      message: "FORBIDDEN",
     },
   ])("$label", ({ error, message }) => {
     expect(toClientError(error).message).toBe(message);

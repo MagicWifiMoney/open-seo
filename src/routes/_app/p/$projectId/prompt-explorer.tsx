@@ -1,3 +1,4 @@
+import { SpendGate } from "@/client/components/SpendLockedNotice";
 import { useMemo } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PromptExplorerPage } from "@/client/features/ai-search/PromptExplorerPage";
@@ -18,7 +19,7 @@ export const Route = createFileRoute("/_app/p/$projectId/prompt-explorer")({
       aiResearchSetupQueryOptions(params.projectId),
     );
   },
-  component: PromptExplorerRoute,
+  component: GuardedPromptExplorerRoute,
 });
 
 function PromptExplorerRoute() {
@@ -68,5 +69,15 @@ function PromptExplorerRoute() {
         </ProjectWebsiteGate>
       </div>
     </div>
+  );
+}
+
+// Paid lookups fire as soon as this page mounts, so a role that cannot spend
+// gets the notice and never mounts it.
+function GuardedPromptExplorerRoute() {
+  return (
+    <SpendGate>
+      <PromptExplorerRoute />
+    </SpendGate>
   );
 }

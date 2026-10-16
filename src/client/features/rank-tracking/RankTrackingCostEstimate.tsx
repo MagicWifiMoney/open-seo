@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { estimateRankCheckCredits } from "@/shared/rank-tracking";
 import { estimateRankCheckCost } from "@/serverFunctions/rank-tracking";
+import { SpendLockedNotice } from "@/client/components/SpendLockedNotice";
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useDataforseoSpend } from "./DataforseoSpendCard";
 import type { SaveConfigInput } from "./useSaveConfigMutations";
 
@@ -20,12 +22,13 @@ export function CostEstimate({
   ConfigFormValues,
   "devices" | "serpDepth" | "schedule" | "trackCompetitors"
 > & { projectId: string; configId?: string }) {
+  const canSpend = useCanSpend();
   // Reuses the detail page's cache key, so an open tracker costs no extra call.
   const { data: tracked } = useQuery({
     queryKey: ["rankTrackingCostEstimate", projectId, configId],
     queryFn: () =>
       estimateRankCheckCost({ data: { projectId, configId: configId ?? "" } }),
-    enabled: Boolean(configId),
+    enabled: Boolean(configId) && canSpend,
   });
   const { data: spend } = useDataforseoSpend(projectId);
   const keywordCount = tracked?.keywordCount ?? 50;
@@ -40,6 +43,7 @@ export function CostEstimate({
   );
   const checksPerMonth =
     schedule === "daily" ? 30 : schedule === "weekly" ? 4 : 1;
+  if (!canSpend) return <SpendLockedNotice compact />;
   return (
     <div className="space-y-0.5 rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground">
       <div>

@@ -31,6 +31,8 @@ type KeywordResearchRequestInput = {
 
 type KeywordResearchQueryInput = KeywordResearchRequestInput & {
   displayedLocationCode: number;
+  /** False for roles that cannot spend credits: the paid request never fires. */
+  canSpend: boolean;
 };
 
 type KeywordResearchRequest = {
@@ -100,6 +102,28 @@ export function keywordResearchQueryFn(request: KeywordResearchRequest) {
   });
 }
 
+export function buildKeywordResearchQueryOptions(
+  request: KeywordResearchRequest | null,
+  canSpend: boolean,
+) {
+  return {
+    queryKey: buildKeywordResearchQueryKey(request),
+    queryFn: () => {
+      if (!request) {
+        throw new Error("Keyword research query ran without request params");
+      }
+
+      return keywordResearchQueryFn(request);
+    },
+    enabled: request !== null && canSpend,
+    staleTime: KEYWORD_RESEARCH_STALE_TIME_MS,
+    gcTime: KEYWORD_RESEARCH_STALE_TIME_MS,
+    retry: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+  };
+}
+
 export function useKeywordResearchData(
   input: KeywordResearchQueryInput,
   addSearch: AddSearchFn,
@@ -114,6 +138,7 @@ export function useKeywordResearchData(
     mode,
     projectId,
     resultLimit,
+    canSpend,
   } = input;
   const request = useMemo<KeywordResearchRequest | null>(
     () =>
@@ -144,22 +169,9 @@ export function useKeywordResearchData(
   );
   const queryKeyString = JSON.stringify(queryKey);
 
-  const researchQuery = useQuery({
-    queryKey,
-    queryFn: () => {
-      if (!request) {
-        throw new Error("Keyword research query ran without request params");
-      }
-
-      return keywordResearchQueryFn(request);
-    },
-    enabled: request !== null,
-    staleTime: KEYWORD_RESEARCH_STALE_TIME_MS,
-    gcTime: KEYWORD_RESEARCH_STALE_TIME_MS,
-    retry: false,
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
-  });
+  const researchQuery = useQuery(
+    buildKeywordResearchQueryOptions(request, canSpend),
+  );
 
   const handledSuccessKeyRef = useRef<string | null>(null);
   useEffect(() => {
@@ -208,7 +220,9 @@ export function useKeywordResearchData(
     researchError,
     researchMutationError: researchQuery.error,
     searchedKeyword: request?.seedKeyword ?? "",
-    isLoading: hasSearched && researchQuery.isPending,
+    // A disabled query stays pending forever; without a spend right there is
+    // nothing to wait for.
+    isLoading: hasSearched && canSpend && researchQuery.isPending,
     researchQuery,
     retryResearch: researchQuery.refetch,
   };

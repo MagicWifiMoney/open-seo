@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useIsMutating, useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
@@ -68,6 +69,7 @@ export function ShopifyCrawlWarning({
   const isSaving =
     useIsMutating({ mutationKey: saveCrawlerCredentialMutationKey }) > 0;
 
+  const canSpend = useCanSpend();
   const rerunMutation = useMutation({
     mutationFn: () =>
       startAudit({
@@ -99,6 +101,9 @@ export function ShopifyCrawlWarning({
       {rerunMutation.isPending ? "Starting…" : "Re-run audit"}
     </Button>
   );
+
+  // Re-running an audit and crawler setup are for roles that can spend.
+  if (!canSpend) return null;
 
   // Until the list loads we can't tell which state applies; don't flash the
   // setup steps at someone who already has a signature.

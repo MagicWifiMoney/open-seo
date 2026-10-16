@@ -4,6 +4,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { findLast } from "remeda";
 import { FolderCog, Plus, Settings } from "lucide-react";
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { setLastProjectId } from "@/client/lib/active-project";
 import { CreateProjectModal } from "@/client/features/projects/CreateProjectModal";
 import {
@@ -43,6 +44,7 @@ export function ProjectSwitcher({
   const router = useRouter();
   const [creating, setCreating] = React.useState(false);
   const [open, setOpen] = React.useState(false);
+  const canSpend = useCanSpend();
   const projectsQuery = useQuery({ ...projectsQueryOptions(), enabled: ready });
   const projects = projectsQuery.data ?? [];
   const activeProject =
@@ -110,7 +112,7 @@ export function ProjectSwitcher({
         <div className="flex items-stretch rounded-lg border border-sidebar-border bg-card">
           <ComboboxTrigger
             aria-label="Switch project"
-            className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-l-lg px-3 py-1.5 text-left hover:bg-accent"
+            className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded-l-lg px-3 py-1.5 text-left hover:bg-accent${canSpend ? "" : " rounded-r-lg"}`}
           >
             <span className="flex min-w-0 flex-col">
               <span className="truncate text-sm font-medium">
@@ -123,7 +125,7 @@ export function ProjectSwitcher({
               ) : null}
             </span>
           </ComboboxTrigger>
-          {activeProject ? (
+          {activeProject && canSpend ? (
             <Button
               nativeButton={false}
               render={

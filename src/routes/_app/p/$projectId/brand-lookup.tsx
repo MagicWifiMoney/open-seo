@@ -1,3 +1,4 @@
+import { SpendGate } from "@/client/components/SpendLockedNotice";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BrandLookupPage } from "@/client/features/ai-search/BrandLookupPage";
 import { brandLookupSearchSchema } from "@/types/schemas/ai-search";
@@ -6,7 +7,7 @@ export const Route = createFileRoute("/_app/p/$projectId/brand-lookup")({
   validateSearch: brandLookupSearchSchema,
   // The project switcher keeps this page; filter drafts must not follow.
   remountDeps: ({ params }) => params.projectId,
-  component: BrandLookupRoute,
+  component: GuardedBrandLookupRoute,
 });
 
 function BrandLookupRoute() {
@@ -39,5 +40,15 @@ function BrandLookupRoute() {
         });
       }}
     />
+  );
+}
+
+// Paid lookups fire as soon as this page mounts, so a role that cannot spend
+// gets the notice and never mounts it.
+function GuardedBrandLookupRoute() {
+  return (
+    <SpendGate>
+      <BrandLookupRoute />
+    </SpendGate>
   );
 }

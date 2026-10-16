@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useQuery } from "@tanstack/react-query";
 import { getDataforseoSpend } from "@/serverFunctions/dataforseo-spend";
 
@@ -5,7 +6,10 @@ export const dataforseoSpendKey = (projectId: string) =>
   ["dataforseoSpend", projectId] as const;
 
 export function useDataforseoSpend(projectId: string) {
+  // Balance and spend are billing detail; roles that cannot spend never see it.
+  const canSpend = useCanSpend();
   return useQuery({
+    enabled: canSpend,
     queryKey: dataforseoSpendKey(projectId),
     queryFn: () => getDataforseoSpend({ data: { projectId } }),
     staleTime: 60_000,
@@ -16,7 +20,9 @@ const usd = (value: number) => `$${value.toFixed(2)}`;
 
 /** Live DataForSEO balance and last-24h spend, so no screen spends blind. */
 export function DataforseoSpendCard({ projectId }: { projectId: string }) {
+  const canSpend = useCanSpend();
   const { data, isError } = useDataforseoSpend(projectId);
+  if (!canSpend) return null;
   if (isError) {
     return (
       <div className="rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground">

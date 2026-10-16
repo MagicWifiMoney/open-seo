@@ -126,12 +126,25 @@ function getProjectNavItems(projectId: string) {
 
 // Grouped by scope: "My Site" is the project's own domain (tracked data),
 // "Research" is point-at-anything lookup tools.
-export function getProjectNavGroups(projectId: string) {
+//
+// Pages that fire paid lookups on load, or hold billing/credential setup, are
+// hidden from roles that cannot spend research credits. Cosmetic: the server
+// gate and the page guards still enforce.
+const SPEND_ONLY_PATHS: ReadonlySet<string> = new Set([
+  "/p/$projectId/domain",
+  "/p/$projectId/backlinks",
+  "/p/$projectId/ai-visibility/research",
+  "/p/$projectId/prompt-explorer",
+  "/p/$projectId/context",
+  aiNavItem.to,
+]);
+
+export function getProjectNavGroups(projectId: string, canSpend = true) {
   const all = getProjectNavItems(projectId);
   const byPath = (path: (typeof projectNavItems)[number]["to"]) =>
     all.find((i) => i.to === path)!;
 
-  return [
+  const groups = [
     {
       label: "Overview",
       items: [byPath("/p/$projectId")],
@@ -171,6 +184,13 @@ export function getProjectNavGroups(projectId: string) {
       ],
     },
   ];
+  if (canSpend) return groups;
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !SPEND_ONLY_PATHS.has(item.to)),
+    }))
+    .filter((group) => group.items.length > 0);
 }
 
 export const dataforseoHelpLinkOptions = linkOptions({

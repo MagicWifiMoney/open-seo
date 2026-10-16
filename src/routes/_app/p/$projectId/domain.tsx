@@ -1,3 +1,4 @@
+import { SpendGate } from "@/client/components/SpendLockedNotice";
 import {
   createFileRoute,
   stripSearchParams,
@@ -43,7 +44,7 @@ export const Route = createFileRoute("/_app/p/$projectId/domain")({
   search: {
     middlewares: [stripSearchParams(DEFAULT_DOMAIN_SEARCH)],
   },
-  component: DomainOverviewRoute,
+  component: GuardedDomainOverviewRoute,
 });
 
 function DomainOverviewRoute() {
@@ -65,5 +66,15 @@ function DomainOverviewRoute() {
       navigate={navigate}
       routeState={routeState}
     />
+  );
+}
+
+// Paid lookups fire as soon as this page mounts, so a role that cannot spend
+// gets the notice and never mounts it.
+function GuardedDomainOverviewRoute() {
+  return (
+    <SpendGate>
+      <DomainOverviewRoute />
+    </SpendGate>
   );
 }

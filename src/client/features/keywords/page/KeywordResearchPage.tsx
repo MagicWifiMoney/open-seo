@@ -1,3 +1,4 @@
+import { SpendLockedNotice } from "@/client/components/SpendLockedNotice";
 import { useCallback, useMemo } from "react";
 import { ErrorState } from "@/client/components/ErrorState";
 import { FormDialog } from "@/client/components/FormDialog";
@@ -214,6 +215,7 @@ export function KeywordResearchPage(input: Props) {
         />
 
         <KeywordResearchSearchBar controller={controller} />
+        {controller.showSpendLockedNotice ? <SpendLockedNotice /> : null}
         {controller.hasSearched ? (
           <SearchTabStrip
             projectId={projectId}
@@ -253,6 +255,8 @@ function KeywordResearchContent({
   ) : null;
 
   if (controller.rows.length === 0) {
+    // The page already shows the notice; "no results" would be untrue.
+    if (!controller.canSpend && controller.hasSearched) return null;
     return (
       errorCard ?? (
         <KeywordResearchEmptyState

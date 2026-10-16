@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -231,6 +232,8 @@ function DomainRow({
   summary: ConfigSummary;
   onArchive: () => void;
 }) {
+  // Archiving goes through updateRankTrackingConfig, which spends.
+  const canSpend = useCanSpend();
   return (
     <div className="relative flex w-full items-center gap-4 px-5 py-3.5 transition-colors hover:bg-foreground/[0.03]">
       <Link
@@ -281,20 +284,22 @@ function DomainRow({
           </div>
         )}
       </div>
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        className="relative z-10 text-muted-foreground hover:text-destructive"
-        title="Archive domain"
-        aria-label={`Archive ${summary.domain}`}
-        onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          onArchive();
-        }}
-      >
-        <Archive className="size-4" />
-      </Button>
+      {canSpend ? (
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="relative z-10 text-muted-foreground hover:text-destructive"
+          title="Archive domain"
+          aria-label={`Archive ${summary.domain}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onArchive();
+          }}
+        >
+          <Archive className="size-4" />
+        </Button>
+      ) : null}
       <ChevronRight className="size-4 shrink-0 text-muted-foreground pointer-events-none" />
     </div>
   );

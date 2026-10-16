@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Play } from "lucide-react";
@@ -24,6 +25,7 @@ export function PromptHistoryPage({
   promptId: string;
 }) {
   const queryClient = useQueryClient();
+  const canSpend = useCanSpend();
   const trackerQuery = useAiVisibilityTracker(projectId);
   const [checking, setChecking] = useState(false);
   const [startedRun, setStartedRun] = useState<AiRun | null>(null);
@@ -42,9 +44,9 @@ export function PromptHistoryPage({
   const tracker = state?.tracker;
   // Price this prompt's Run now on load, so the dialog opens on a price.
   useEffect(() => {
-    if (tracker)
+    if (tracker && canSpend)
       prefetchRunNowCost(queryClient, projectId, tracker, [promptId]);
-  }, [queryClient, projectId, promptId, tracker]);
+  }, [queryClient, projectId, promptId, tracker, canSpend]);
   return (
     <div className="space-y-4">
       <PageHeader
@@ -62,6 +64,7 @@ export function PromptHistoryPage({
           prompt ? `${prompt.topic} · Prompt analysis` : "Prompt analysis"
         }
         actions={
+          canSpend &&
           state?.tracker &&
           prompt &&
           !prompt.archived &&

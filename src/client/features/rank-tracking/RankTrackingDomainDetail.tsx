@@ -1,3 +1,4 @@
+import { useCanSpend } from "@/client/features/team/organizationQueries";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -92,6 +93,7 @@ export function RankTrackingDomainDetail({
   onEdit: () => void;
 }) {
   const planStatus = useHostedPlanGate();
+  const canSpend = useCanSpend();
   const queryClient = useQueryClient();
   const [showAddKeywords, setShowAddKeywords] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -143,6 +145,7 @@ export function RankTrackingDomainDetail({
     queryKey: ["rankTrackingCostEstimate", projectId, config.id],
     queryFn: () =>
       estimateRankCheckCost({ data: { projectId, configId: config.id } }),
+    enabled: canSpend,
   });
 
   const [pendingCheck, setPendingCheck] = useState<{
@@ -154,6 +157,7 @@ export function RankTrackingDomainDetail({
     added: number;
     checkTriggered: boolean;
     checkScheduledSoon: boolean;
+    spendSkipped: boolean;
   }) => {
     void queryClient.invalidateQueries({
       queryKey: ["rankTrackingCostEstimate", projectId, config.id],
@@ -166,6 +170,12 @@ export function RankTrackingDomainDetail({
     });
     setShowAddKeywords(false);
     captureClientEvent("rank_tracking:keywords_add");
+    if (result.spendSkipped) {
+      toast.success(
+        "Keywords added. They'll be checked on the next scheduled run.",
+      );
+      return;
+    }
     toast.success(
       `${result.added} keyword${result.added !== 1 ? "s" : ""} added`,
     );
@@ -239,7 +249,7 @@ export function RankTrackingDomainDetail({
     <div className="space-y-3">
       <ScheduledChecksPausedAlert />
 
-      {config.lastSkipReason === "insufficient_credits" && (
+      {canSpend && config.lastSkipReason === "insufficient_credits" && (
         <Alert variant="warning">
           <AlertTriangle />
           <AlertDescription className="text-foreground">
@@ -251,7 +261,7 @@ export function RankTrackingDomainDetail({
 
       <RankRunAlerts run={latestRun} />
 
-      <FreePlanAlert visible={planStatus === "free"} />
+      <FreePlanAlert visible={planStatus === "free" && canSpend} />
 
       {/* Results card */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -259,7 +269,8 @@ export function RankTrackingDomainDetail({
         <RankTrackingDetailHeader
           config={config}
           run={run}
-          costEstimate={costEstimate}
+          costEstimate={canSpend ? costEstimate : undefined}
+          canConfigure={canSpend}
           hasBothDevices={hasBothDevices}
           activeDevice={activeDevice}
           onActiveDeviceChange={(device) =>
@@ -319,7 +330,8 @@ export function RankTrackingDomainDetail({
           metricsRefreshing={metricsRefreshing}
           trackedKeywordCount={trackedKeywordCount}
           checkBusy={isBusy}
-          checkDisabled={planStatus !== "paid"}
+          // Run now and Refresh metrics both spend credits.
+          checkDisabled={planStatus !== "paid" || !canSpend}
           hasData={filtered.length > 0}
         />
 
