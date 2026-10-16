@@ -6,6 +6,8 @@
 - SAM chat bubble on every project page (bottom-right). Clients capped at SAM_CLIENT_DAILY_TURNS (default 60). BLOCKED: OpenRouter account has $0 credit (135 bought / 135.21 used); SAM replies "stopped before finishing" until Jake tops up. Key in .env.miller = Doppler shared/prd OPENROUTER_API_KEY__2.
 - GSC Insights page rebuilt on stored gsc_daily_* rows (presets to 16 months, compare, device, buckets, movers, tables). Verified live in Chrome as owner.
 
+- Costs tab LIVE (all roles): cost_ledger (migration 0059) records every paid DataForSEO/OpenRouter call at provider cost with run attribution from this deploy on; earlier runs show estimates. DataForSEO balance was $6.76 at 18:30 CT with $29 spent on the shared key today (not all Miller).
+
 ## Next
 - Jake: top up OpenRouter, then re-test the bubble. Send Charlie the invite (text in brain runbook docs/runbooks/openseo-client-access.md).
 - Not yet verified with a real @millerestatesolutions.com login (no test account); role resolution is unit-tested.
