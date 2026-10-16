@@ -25,6 +25,8 @@ import {
   getPositionMatrixSchema,
   getCompetitorMatrixSchema,
 } from "@/types/schemas/rank-tracking";
+import { requireSpend } from "@/server/auth/org-gate";
+import { canSpend } from "@/lib/org-permissions";
 
 export interface RankKeywordHistoryPoint {
   device: "desktop" | "mobile";
@@ -96,11 +98,16 @@ export const createRankTrackingConfig = createServerFn({ method: "POST" })
 
     // Re-adding an archived domain keeps its keywords, and the keyword step
     // then adds nothing new — so this is the only place its check can start.
-    await runAutoCheck({
-      configId: result.id,
-      projectId: context.projectId,
-      billingCustomer: context,
-    });
+    // Clients persist the config but never start paid work; the owner's
+    // scheduled run picks it up.
+    const spendSkipped = !canSpend(context.role);
+    if (!spendSkipped) {
+      await runAutoCheck({
+        configId: result.id,
+        projectId: context.projectId,
+        billingCustomer: context,
+      });
+    }
 
     waitUntil(
       captureServerEvent({
@@ -116,7 +123,7 @@ export const createRankTrackingConfig = createServerFn({ method: "POST" })
       }),
     );
 
-    return result;
+    return { ...result, spendSkipped };
   });
 
 export const updateRankTrackingConfig = createServerFn({ method: "POST" })
@@ -142,6 +149,7 @@ export const triggerRankCheck = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(triggerCheckSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     const result = await RankTrackingService.triggerCheck({
       configId: data.configId,
       projectId: context.projectId,
@@ -230,8 +238,11 @@ export const addTrackingKeywords = createServerFn({ method: "POST" })
       data.matchCase,
     );
 
+    // Clients keep the keywords but never trigger the paid check or metrics
+    // fetch; the next scheduled run covers them.
+    const spendSkipped = !canSpend(context.role);
     const autoCheck =
-      result.addedIds.length > 0
+      result.addedIds.length > 0 && !spendSkipped
         ? await runAutoCheck({
             configId: data.configId,
             projectId: context.projectId,
@@ -241,7 +252,7 @@ export const addTrackingKeywords = createServerFn({ method: "POST" })
         : null;
 
     // Fetch keyword metrics (awaited so they're in the DB before client re-fetches)
-    if (result.added > 0) {
+    if (result.added > 0 && !spendSkipped) {
       try {
         await RankTrackingService.refreshKeywordMetrics(
           data.configId,
@@ -255,6 +266,7 @@ export const addTrackingKeywords = createServerFn({ method: "POST" })
 
     return {
       ...result,
+      spendSkipped,
       checkTriggered: autoCheck?.ok ?? false,
       checkScheduledSoon:
         autoCheck?.ok === false && autoCheck.reason === "scheduled_soon",
@@ -288,6 +300,7 @@ export const refreshTrackingKeywordMetrics = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(refreshMetricsSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     const result = await RankTrackingService.refreshKeywordMetrics(
       data.configId,
       context.projectId,

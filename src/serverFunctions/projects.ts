@@ -1,3 +1,4 @@
+import { canSpend } from "@/lib/org-permissions";
 import { DashboardFirstAuditService } from "@/server/features/dashboard/services/DashboardFirstAuditService";
 import { createServerFn } from "@tanstack/react-start";
 import { requireOrgPermission } from "@/server/auth/org-gate";
@@ -48,7 +49,9 @@ export const updateProject = createServerFn({ method: "POST" })
       data,
     );
     const initialAudit =
-      project.domain !== context.project.domain
+      // The first audit is paid Browser Rendering work; clients keep the new
+      // domain but never start it.
+      project.domain !== context.project.domain && canSpend(context.role)
         ? await DashboardFirstAuditService.start(
             project.id,
             project.domain,

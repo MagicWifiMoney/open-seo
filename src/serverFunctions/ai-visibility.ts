@@ -18,26 +18,29 @@ import {
   aiExportSchema,
   aiTrendSchema,
 } from "@/types/schemas/ai-visibility";
+import { requireSpend } from "@/server/auth/org-gate";
 
 export const generateAiVisibilityPrompts = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(generateAiPromptsSchema)
-  .handler(({ data, context }) =>
-    AiVisibilityService.generatePrompts(
+  .handler(({ data, context }) => {
+    requireSpend(context);
+    return AiVisibilityService.generatePrompts(
       { ...data, projectId: context.projectId },
       context,
-    ),
-  );
+    );
+  });
 
 export const researchAiVisibilityPrompts = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(researchAiPromptsSchema)
-  .handler(({ data, context }) =>
-    AiVisibilityService.researchPrompts(
+  .handler(({ data, context }) => {
+    requireSpend(context);
+    return AiVisibilityService.researchPrompts(
       { ...data, projectId: context.projectId },
       context,
-    ),
-  );
+    );
+  });
 
 export const getAiResearchSetup = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
@@ -49,13 +52,14 @@ export const getAiResearchSetup = createServerFn({ method: "POST" })
 export const startAiResearchSetup = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(aiProjectSchema)
-  .handler(({ context }) =>
-    AiVisibilityService.startResearchSetup(
+  .handler(({ context }) => {
+    requireSpend(context);
+    return AiVisibilityService.startResearchSetup(
       { projectId: context.projectId },
       context,
       { runSeededTracking: true },
-    ),
-  );
+    );
+  });
 
 export const listAiResearchKeywords = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
@@ -88,22 +92,24 @@ export const estimateAiVisibilityCost = createServerFn({ method: "POST" })
 export const setAiVisibilitySchedule = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(setAiScheduleSchema)
-  .handler(({ data, context }) =>
-    AiVisibilityService.setSchedule(
+  .handler(({ data, context }) => {
+    requireSpend(context);
+    return AiVisibilityService.setSchedule(
       { ...data, projectId: context.projectId },
       context,
-    ),
-  );
+    );
+  });
 
 export const runAiVisibilityCheck = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(runAiCheckSchema)
-  .handler(({ data, context }) =>
-    AiVisibilityService.runCheck(
+  .handler(({ data, context }) => {
+    requireSpend(context);
+    return AiVisibilityService.runCheck(
       { ...data, projectId: context.projectId },
       context,
-    ),
-  );
+    );
+  });
 
 export const getAiVisibilityRun = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)

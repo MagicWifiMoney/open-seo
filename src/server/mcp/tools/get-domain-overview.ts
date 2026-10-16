@@ -43,6 +43,7 @@ type Args = z.infer<z.ZodObject<typeof inputSchema>>;
 
 export const getDomainOverviewTool = {
   name: "get_domain_overview",
+  spend: true,
   config: {
     title: "Get domain overview",
     description:

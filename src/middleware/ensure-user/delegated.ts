@@ -1,5 +1,7 @@
+import { env } from "cloudflare:workers";
 import { db } from "@/db";
 import { user } from "@/db/schema";
+import { resolveAccessRole } from "@/server/auth/accessRole";
 import {
   ensureDelegatedOrganizationForUser,
   ensureSharedWorkspaceOrganization,
@@ -93,8 +95,9 @@ export async function resolveSharedWorkspaceContext(
     emailVerified: true,
     organizationId,
     // The Access policy is the authorization boundary; everyone it admits has
-    // full control of the shared workspace.
-    role: "owner",
+    // full control of the shared workspace, except listed client seats
+    // (ACCESS_CLIENT_DOMAINS / ACCESS_CLIENT_EMAILS) which cannot spend.
+    role: resolveAccessRole(ensuredEmail, env),
   };
 }
 

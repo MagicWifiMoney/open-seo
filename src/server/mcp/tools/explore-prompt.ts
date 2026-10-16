@@ -42,6 +42,7 @@ const modelOutputSchema = z.discriminatedUnion("status", [
 
 export const explorePromptTool = {
   name: "explore_prompt",
+  spend: true,
   config: {
     title: "Explore an AI prompt",
     description:

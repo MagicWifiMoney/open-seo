@@ -1,5 +1,6 @@
 import type { ServerContext } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { resolveAccessRole } from "@/server/auth/accessRole";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
 import { resolveClientLabel } from "@/server/mcp/client-label";
 import { buildDashboardUrl } from "@/server/mcp/urls";
@@ -123,6 +124,9 @@ function readClientTitle(context: ToolCallContext): string | undefined {
 export function createMcpToolContext(
   context: ToolCallContext,
   props: McpProps,
+  // Passed in (not imported from cloudflare:workers) so this module stays
+  // loadable in unit tests.
+  accessEnv: Parameters<typeof resolveAccessRole>[1] = {},
 ): ToolContext {
   const result = workersOAuthMcpPropsSchema.safeParse(props);
   if (!result.success) {
@@ -139,8 +143,12 @@ export function createMcpToolContext(
   // Delegated/self-hosted modes have no member rows and a single implicit owner
   // per org; "pinned" without a role means owner. Hosted ("user" scope)
   // stamps the role from the member row per request in transport.ts.
+  // Pinned mode maps through the same Access client-seat list as the web app.
   const role =
-    applicationAuth.role ?? (orgScope === "pinned" ? "owner" : undefined);
+    applicationAuth.role ??
+    (orgScope === "pinned"
+      ? resolveAccessRole(applicationAuth.userEmail, accessEnv)
+      : undefined);
   if (!role) {
     throw new Error(
       "MCP auth context is missing a role for a user-scoped credential",

@@ -82,6 +82,7 @@ type RunArgs = z.infer<z.ZodObject<typeof runInputSchema>>;
 
 export const runSiteAuditTool = {
   name: "run_site_audit",
+  spend: true,
   config: {
     title: "Run site audit",
     description:

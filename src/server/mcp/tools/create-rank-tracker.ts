@@ -65,6 +65,7 @@ type Args = z.infer<z.ZodObject<typeof inputSchema>>;
 
 export const createRankTrackerTool = {
   name: "create_rank_tracker",
+  spend: true,
   config: {
     title: "Create rank tracker",
     description:

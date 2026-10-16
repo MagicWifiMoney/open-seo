@@ -1,5 +1,6 @@
 import { DashboardSiteService } from "@/server/features/dashboard/services/DashboardSiteService";
 import { AppError } from "@/server/lib/errors";
+import { canSpend } from "@/lib/org-permissions";
 import { createServerFn } from "@tanstack/react-start";
 import { ActivationRepository } from "@/server/features/activation/repositories/ActivationRepository";
 import { DashboardService } from "@/server/features/dashboard/services/DashboardService";
@@ -83,6 +84,8 @@ export const getDashboardBacklinks = createServerFn({ method: "POST" })
     return DashboardSiteService.getBacklinks(
       { domain: context.project.domain, kind: data.kind },
       context,
+      // Non-spending roles read the cache only; a miss must not bill DataForSEO.
+      { cacheOnly: !canSpend(context.role) },
     );
   });
 export const getDashboardEmergingQueries = createServerFn({ method: "POST" })
@@ -103,5 +106,6 @@ export const getDashboardLinkActivity = createServerFn({ method: "POST" })
     return DashboardSiteService.getLinkActivity(
       context.project.domain,
       context,
+      { cacheOnly: !canSpend(context.role) },
     );
   });

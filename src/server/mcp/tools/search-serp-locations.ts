@@ -20,6 +20,7 @@ type Args = z.infer<z.ZodObject<typeof inputSchema>>;
 
 export const searchSerpLocationsTool = {
   name: "search_serp_locations",
+  spend: true,
   config: {
     title: "Search SERP locations",
     description:

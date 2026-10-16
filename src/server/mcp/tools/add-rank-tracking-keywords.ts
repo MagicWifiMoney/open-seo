@@ -38,6 +38,7 @@ type Args = z.infer<z.ZodObject<typeof inputSchema>>;
 
 export const addRankTrackingKeywordsTool = {
   name: "add_rank_tracking_keywords",
+  spend: true,
   config: {
     title: "Add rank tracking keywords",
     description:

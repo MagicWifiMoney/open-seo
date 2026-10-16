@@ -871,6 +871,7 @@ const KEYWORD_METRIC_COLUMNS: McpTableColumn<unknown>[] = [
 
 export const getRankedKeywordsTool = {
   name: "get_ranked_keywords",
+  spend: true,
   config: {
     title: "Get ranked keywords",
     description:
@@ -953,6 +954,7 @@ export const getRankedKeywordsTool = {
 
 export const searchLocalBusinessesTool = {
   name: "search_local_businesses",
+  spend: true,
   config: {
     title: "Search local businesses",
     description:
@@ -1000,6 +1002,7 @@ export const searchLocalBusinessesTool = {
 
 export const getLocalSerpResultsTool = {
   name: "get_local_serp_results",
+  spend: true,
   config: {
     title: "Get local SERP results",
     description:
@@ -1049,6 +1052,7 @@ export const getLocalSerpResultsTool = {
 
 export const getGoogleBusinessQuestionsTool = {
   name: "get_google_business_questions",
+  spend: true,
   config: {
     title: "Get Google business questions",
     description:
@@ -1092,6 +1096,7 @@ export const getGoogleBusinessQuestionsTool = {
 
 export const findSerpCompetitorsTool = {
   name: "find_serp_competitors",
+  spend: true,
   config: {
     title: "Find SERP competitors",
     description:
@@ -1151,6 +1156,7 @@ export const findSerpCompetitorsTool = {
 
 export const getKeywordMetricsTool = {
   name: "get_keyword_metrics",
+  spend: true,
   config: {
     title: "Get keyword metrics",
     description:
