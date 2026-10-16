@@ -4,10 +4,12 @@ import {
   searchTextParam,
 } from "@/types/schemas/domain";
 
-/** Date ranges offered by the Search Performance page. A deliberate subset of
- *  the GSC agent ranges (GSC_DATE_RANGES in searchAnalytics.ts); assignability
- *  to GscDateRange is compiler-checked at the resolveDateRange call site. */
+/** Date ranges offered by the Search Performance page. Every range but
+ *  `since_launch` is a subset of the GSC agent ranges (GSC_DATE_RANGES in
+ *  searchAnalytics.ts); `since_launch` is resolved to explicit dates by
+ *  resolveSearchWindows. */
 export const SEARCH_PERFORMANCE_RANGES = [
+  "since_launch",
   "last_7_days",
   "last_28_days",
   "last_3_months",
@@ -36,7 +38,7 @@ const searchPerformanceFilterShape = {
     })
     .optional(),
   projectId: z.string().min(1),
-  dateRange: z.enum(SEARCH_PERFORMANCE_RANGES).default("last_28_days"),
+  dateRange: z.enum(SEARCH_PERFORMANCE_RANGES).default("since_launch"),
   device: z.enum(GSC_DEVICES).optional(),
   // ISO-3166-1 alpha-3, the code GSC returns in `country` dimension keys.
   country: z
@@ -79,6 +81,7 @@ export const searchPerformanceTableExportInputSchema = z.object({
 });
 
 export const SEARCH_PERFORMANCE_TABS = [
+  "movers",
   "striking",
   "queries",
   "pages",

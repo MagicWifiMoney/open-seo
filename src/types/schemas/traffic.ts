@@ -10,6 +10,7 @@ export const TRAFFIC_RANGES = [
   "last_12_months",
   "since_launch",
   "pre_launch",
+  "launch_window",
   "all",
   "custom",
 ] as const;
@@ -61,9 +62,12 @@ const isoDate = z.string().refine(isValidIsoDate);
 
 /** /p/$projectId/traffic query params. Bad values fall back to the default. */
 export const trafficSearchSchema = z.object({
-  range: z.enum(TRAFFIC_RANGES).default("all").catch("all"),
+  range: z.enum(TRAFFIC_RANGES).default("launch_window").catch("launch_window"),
   metric: z.enum(TRAFFIC_METRICS).default("sessions").catch("sessions"),
-  channel: z.enum(TRAFFIC_CHANNELS).default("all").catch("all"),
+  channel: z
+    .enum(TRAFFIC_CHANNELS)
+    .default("organic_search")
+    .catch("organic_search"),
   granularity: z.enum(TRAFFIC_GRANULARITIES).default("week").catch("week"),
   compare: z.enum(TRAFFIC_COMPARES).default("baseline").catch("baseline"),
   launch: isoDate.default(SITE_LAUNCH_DATE).catch(SITE_LAUNCH_DATE),
@@ -75,9 +79,9 @@ export const trafficSearchSchema = z.object({
 export type TrafficSearch = z.infer<typeof trafficSearchSchema>;
 
 export const TRAFFIC_SEARCH_DEFAULTS = {
-  range: "all",
+  range: "launch_window",
   metric: "sessions",
-  channel: "all",
+  channel: "organic_search",
   granularity: "week",
   compare: "baseline",
   launch: SITE_LAUNCH_DATE,

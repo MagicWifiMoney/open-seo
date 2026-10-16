@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   latestDataDate,
+  launchComparison,
   lookbackWindow,
   preLaunchWindow,
   resolveCompare,
@@ -109,5 +110,22 @@ describe("date helpers", () => {
   it("builds the pre-launch and lookback windows", () => {
     expect(preLaunchWindow(LAUNCH).end).toBe("2026-08-14");
     expect(lookbackWindow(LAUNCH).end).toBe("2026-08-14");
+  });
+});
+
+describe("launchComparison", () => {
+  it("pairs launch to the latest day with the scaled 12 weeks before", () => {
+    const pair = launchComparison(LAUNCH, ASOF);
+    expect(pair?.current).toEqual({ start: LAUNCH, end: ASOF });
+    expect(pair?.reference).toMatchObject({
+      start: "2026-05-23",
+      end: "2026-08-14",
+      isAverage: true,
+    });
+    expect(pair?.reference.scale).toBeCloseTo(59 / 84);
+  });
+
+  it("is null until the latest data day reaches launch", () => {
+    expect(launchComparison(LAUNCH, "2026-08-14")).toBeNull();
   });
 });

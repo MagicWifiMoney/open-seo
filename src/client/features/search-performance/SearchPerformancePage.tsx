@@ -26,11 +26,14 @@ import {
   SearchPerformanceTextFilters,
   type TextFilters,
 } from "@/client/features/search-performance/SearchPerformanceTextFilters";
+import { TotalsTable } from "@/client/features/search-performance/SearchPerformanceTotals";
+import { MoversTable } from "@/client/features/search-performance/SearchPerformanceMovers";
+import { SearchPerformanceWeeklyChart } from "@/client/features/search-performance/SearchPerformanceWeeklyChart";
 import {
   exportDimensionRows,
+  exportMovers,
   exportStriking,
   StrikingDistanceTable,
-  TotalsTable,
   type ExportTarget,
 } from "@/client/features/search-performance/SearchPerformanceParts";
 import { getStandardErrorMessage } from "@/client/lib/error-messages";
@@ -53,7 +56,7 @@ function tabDimension(
 }
 
 function buildFilterInput({
-  range = "last_28_days",
+  range = "since_launch",
   device,
   country,
 }: Pick<SearchPerformanceSearch, "range" | "device" | "country">): FilterInput {
@@ -99,8 +102,8 @@ export function SearchPerformancePage({
     Number(Boolean(textFilters.queryFilter)) +
     Number(Boolean(country)) +
     Number(Boolean(device)) +
-    Number(range !== undefined && range !== "last_28_days");
-  const tab = search.tab ?? "striking";
+    Number(range !== undefined && range !== "since_launch");
+  const tab = search.tab ?? "movers";
   const page = search.page ?? 1;
   const pageSize = search.size ?? SEARCH_PERFORMANCE_DEFAULT_PAGE_SIZE;
 
@@ -159,6 +162,10 @@ export function SearchPerformancePage({
       return;
     setIsExporting(true);
     try {
+      if (tab === "movers") {
+        await exportMovers(report, target);
+        return;
+      }
       if (tab === "striking") {
         await exportStriking(report, target);
         return;
@@ -253,7 +260,14 @@ export function SearchPerformancePage({
             {reportQuery.isPlaceholderData ? (
               <SearchPerformanceLoadingState />
             ) : (
-              <TotalsTable report={report} />
+              <>
+                <TotalsTable report={report} />
+                <SearchPerformanceWeeklyChart
+                  daily={report.daily}
+                  launch={report.chartLaunch}
+                  latest={report.chartEnd}
+                />
+              </>
             )}
             <div className="overflow-hidden rounded-xl border border-border bg-card">
               <DataTableTabs
@@ -274,6 +288,11 @@ export function SearchPerformancePage({
                   />
                 }
               >
+                <TabsTrigger value="movers">
+                  {reportQuery.isPlaceholderData
+                    ? "Movers"
+                    : `Movers (${report.movers.length})`}
+                </TabsTrigger>
                 <TabsTrigger value="striking">
                   {reportQuery.isPlaceholderData
                     ? "Striking distance"
@@ -313,6 +332,8 @@ export function SearchPerformancePage({
                 <div className="p-8 text-sm" role="status">
                   Loading matching results…
                 </div>
+              ) : tab === "movers" ? (
+                <MoversTable rows={report.movers} range={report.range} />
               ) : tab === "striking" ? (
                 <StrikingDistanceTable
                   projectId={projectId}

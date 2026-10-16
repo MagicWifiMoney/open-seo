@@ -54,8 +54,9 @@ describe("Search Performance combined filters", () => {
 
   it("applies the same filters to both totals periods and striking distance, keeping country options available", async () => {
     await getSearchPerformanceReport({ data });
-    expect(getPerformance).toHaveBeenCalledTimes(4);
-    for (const index of [0, 1, 2]) {
+    // totals x2, striking, country, weekly chart, movers x2, brand x2.
+    expect(getPerformance).toHaveBeenCalledTimes(9);
+    for (const index of [0, 1, 2, 4, 5, 6]) {
       expect(getPerformance.mock.calls[index][0]).toMatchObject({
         projectId: "authorized-project",
         filters,
@@ -64,6 +65,38 @@ describe("Search Performance combined filters", () => {
     expect(getPerformance.mock.calls[3][0]).toMatchObject({
       dimensions: ["country"],
       filters: filters.slice(0, 3),
+    });
+  });
+
+  it("splits brand clicks with the brand filter on top of the shared filters", async () => {
+    await getSearchPerformanceReport({ data });
+    for (const index of [7, 8]) {
+      expect(getPerformance.mock.calls[index][0]).toMatchObject({
+        dimensions: ["date"],
+        filters: [
+          ...filters,
+          { dimension: "query", operator: "contains", expression: "miller" },
+        ],
+      });
+    }
+  });
+
+  it("opens on since launch against the 12 weeks before launch", async () => {
+    getPerformance.mockClear();
+    const { dateRange: _unused, ...rest } = data;
+    const result = await getSearchPerformanceReport({ data: rest });
+    expect(result).toMatchObject({
+      connected: true,
+      range: {
+        startDate: "2026-08-15",
+        prevStartDate: "2026-05-23",
+        prevEndDate: "2026-08-14",
+        baseline: "launch",
+      },
+    });
+    expect(getPerformance.mock.calls[1][0]).toMatchObject({
+      startDate: "2026-05-23",
+      endDate: "2026-08-14",
     });
   });
 

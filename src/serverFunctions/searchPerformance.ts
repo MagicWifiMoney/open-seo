@@ -4,17 +4,20 @@ import {
   GscService,
   isExpectedGrantFailure,
 } from "@/server/features/gsc/services/GscService";
+import { preLaunchWindow } from "@/client/features/overview/overviewRange";
+import { weekStart } from "@/client/features/traffic/trafficMath";
+import type { GscPerformanceFilter } from "@/server/features/gsc/searchAnalytics";
 import {
-  resolveDateRange,
-  type GscPerformanceFilter,
-} from "@/server/features/gsc/searchAnalytics";
-import {
+  buildMovers,
   buildStrikingDistanceRows,
-  previousPeriod,
+  resolveSearchWindows,
+  scaleTotals,
   sumSearchTotals,
   toDimensionRows,
 } from "@/server/features/gsc/searchPerformanceReport";
+import { BRAND_TERMS, brandFilterSets } from "@/shared/brandQueries";
 import { requireProjectContext } from "@/serverFunctions/middleware";
+import { SITE_LAUNCH_DATE } from "@/types/schemas/traffic";
 import {
   searchPerformanceInputSchema,
   searchPerformanceTableExportInputSchema,
@@ -23,8 +26,11 @@ import {
 
 // query x page fan-out needs more rows to find the 5..20 band.
 const STRIKING_DISTANCE_FETCH_LIMIT = 1000;
-// dimensions:["date"] returns one row per day; the longest range is ~92 days.
-const DAILY_ROW_LIMIT = 200;
+// dimensions:["date"] returns one row per day; GSC's per-call maximum covers
+// the launch chart (12 weeks before launch to now) for years to come.
+const DAILY_ROW_LIMIT = 1000;
+// Top queries per window for the Movers tab (GSC's per-call maximum).
+const MOVERS_FETCH_LIMIT = 1000;
 const COUNTRY_ROW_LIMIT = 25;
 // Export pulls the whole dimension in one shot, capped at GSC's per-call max
 // (GSC_MAX_ROW_LIMIT). Large stores get everything up to this ceiling.
@@ -75,15 +81,49 @@ export const getSearchPerformanceReport = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(searchPerformanceInputSchema)
   .handler(async ({ data, context }) => {
-    const { startDate, endDate } = resolveDateRange({
-      dateRange: data.dateRange,
-    });
-    const prev = previousPeriod(startDate, endDate);
+    const windows = resolveSearchWindows(data.dateRange);
+    const { startDate, endDate, scale } = windows;
     const projectId = context.projectId;
     const { nonCountryFilters, filters } = buildGscFilters(data);
+    // The weekly chart always spans the launch story: from the start of the
+    // week holding the first pre-launch day through the latest data day.
+    const chartStart = weekStart(preLaunchWindow(SITE_LAUNCH_DATE).start);
+    const chartEnd = resolveSearchWindows("since_launch").endDate;
+    const brandSets = brandFilterSets(BRAND_TERMS);
+    const sumBrandClicks = async (window: { start: string; end: string }) => {
+      const results = await Promise.all(
+        brandSets.map((set) =>
+          GscService.getPerformance({
+            projectId,
+            startDate: window.start,
+            endDate: window.end,
+            dimensions: ["date"],
+            filters: [
+              ...filters,
+              ...set.map((entry) => ({
+                dimension: "query" as const,
+                ...entry,
+              })),
+            ],
+            rowLimit: DAILY_ROW_LIMIT,
+          }),
+        ),
+      );
+      return sumSearchTotals(results.flatMap((result) => result.rows)).clicks;
+    };
 
     try {
-      const [current, previous, queryPages, countries] = await Promise.all([
+      const [
+        current,
+        previous,
+        queryPages,
+        countries,
+        daily,
+        currentQueries,
+        previousQueries,
+        brandClicks,
+        prevBrandClicks,
+      ] = await Promise.all([
         GscService.getPerformance({
           projectId,
           startDate,
@@ -94,8 +134,8 @@ export const getSearchPerformanceReport = createServerFn({ method: "POST" })
         }),
         GscService.getPerformance({
           projectId,
-          startDate: prev.startDate,
-          endDate: prev.endDate,
+          startDate: windows.prevStartDate,
+          endDate: windows.prevEndDate,
           dimensions: ["date"],
           filters,
           rowLimit: DAILY_ROW_LIMIT,
@@ -116,18 +156,71 @@ export const getSearchPerformanceReport = createServerFn({ method: "POST" })
           filters: nonCountryFilters,
           rowLimit: COUNTRY_ROW_LIMIT,
         }),
+        GscService.getPerformance({
+          projectId,
+          startDate: chartStart,
+          endDate: chartEnd,
+          dimensions: ["date"],
+          filters,
+          rowLimit: DAILY_ROW_LIMIT,
+        }),
+        GscService.getPerformance({
+          projectId,
+          startDate,
+          endDate,
+          dimensions: ["query"],
+          filters,
+          rowLimit: MOVERS_FETCH_LIMIT,
+        }),
+        GscService.getPerformance({
+          projectId,
+          startDate: windows.prevStartDate,
+          endDate: windows.prevEndDate,
+          dimensions: ["query"],
+          filters,
+          rowLimit: MOVERS_FETCH_LIMIT,
+        }),
+        sumBrandClicks({ start: startDate, end: endDate }),
+        sumBrandClicks({
+          start: windows.prevStartDate,
+          end: windows.prevEndDate,
+        }),
       ]);
 
+      const totals = sumSearchTotals(current.rows);
+      const prevTotals = scaleTotals(sumSearchTotals(previous.rows), scale);
       return {
         connected: true as const,
         range: {
           startDate,
           endDate,
-          prevStartDate: prev.startDate,
-          prevEndDate: prev.endDate,
+          prevStartDate: windows.prevStartDate,
+          prevEndDate: windows.prevEndDate,
+          scale,
+          baseline: windows.baseline,
         },
-        totals: sumSearchTotals(current.rows),
-        prevTotals: sumSearchTotals(previous.rows),
+        totals,
+        prevTotals,
+        brand: {
+          terms: [...BRAND_TERMS],
+          clicks: brandClicks,
+          prevClicks: prevBrandClicks * scale,
+        },
+        movers: buildMovers(currentQueries.rows, previousQueries.rows, scale),
+        daily: daily.rows.flatMap((row) => {
+          const date = row.keys?.[0];
+          return date
+            ? [
+                {
+                  date,
+                  clicks: row.clicks,
+                  impressions: row.impressions,
+                },
+              ]
+            : [];
+        }),
+        chartLaunch: SITE_LAUNCH_DATE,
+        chartEnd,
         strikingDistance: buildStrikingDistanceRows(queryPages.rows),
         countries: toDimensionRows(countries.rows),
       };
@@ -148,9 +241,7 @@ export const getSearchPerformanceTable = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(searchPerformanceTableInputSchema)
   .handler(async ({ data, context }) => {
-    const { startDate, endDate } = resolveDateRange({
-      dateRange: data.dateRange,
-    });
+    const { startDate, endDate } = resolveSearchWindows(data.dateRange);
     const { filters } = buildGscFilters(data);
     const offset = (data.page - 1) * data.pageSize;
 
@@ -198,9 +289,7 @@ export const exportSearchPerformanceTable = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(searchPerformanceTableExportInputSchema)
   .handler(async ({ data, context }) => {
-    const { startDate, endDate } = resolveDateRange({
-      dateRange: data.dateRange,
-    });
+    const { startDate, endDate } = resolveSearchWindows(data.dateRange);
     const { filters } = buildGscFilters(data);
 
     const result = await GscService.getPerformance({
