@@ -26,6 +26,10 @@ import {
 import { sweepDubReferredOrganizations } from "@/server/referrals/dub";
 import { maybeSendSelfHostHeartbeat } from "@/server/lib/self-host-telemetry";
 import { handleGdprStorageErasure } from "@/server/gdpr/storage-erasure";
+import {
+  handleMillerHubFeed,
+  MILLER_HUB_FEED_PATH,
+} from "@/server/features/rank-tracking/services/millerHubFeed";
 import { GDPR_STORAGE_ERASURE_PATH } from "@/shared/gdpr-erasure";
 
 const startHandler = createStartHandler(defaultStreamHandler);
@@ -140,6 +144,9 @@ function handleFetch(
   env: Env,
   ctx: ExecutionContext,
 ): Response | Promise<Response> {
+  if (new URL(request.url).pathname === MILLER_HUB_FEED_PATH) {
+    return handleMillerHubFeed(request, env);
+  }
   const authMode = getAuthMode(env.AUTH_MODE);
   const publicRequest = requestWithPublicOrigin(request);
   const pathname = new URL(publicRequest.url).pathname;

@@ -29,6 +29,8 @@ declare namespace Cloudflare {
     AUDIT_ENGINE: Service<typeof import("./audit-worker").default>;
 
     AUTH_MODE?: "cloudflare_access" | "local_noauth" | "hosted";
+    MILLER_HUB_FEED_ENABLED?: string;
+    MILLER_HUB_TRACKER_ID?: string;
     BYPASS_EMAIL_VERIFICATION?: string;
     TEAM_DOMAIN?: string;
     POLICY_AUD?: string;
