@@ -130,6 +130,7 @@ export const updateRankTrackingConfig = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(updateConfigSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     await RankTrackingService.updateConfig(data.configId, context.projectId, {
       domain: data.domain,
       locationCode: data.locationCode,

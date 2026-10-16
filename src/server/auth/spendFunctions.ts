@@ -28,6 +28,7 @@ export const SPEND_SERVER_FUNCTIONS: Record<string, string[]> = {
     "getBacklinksTopPages",
   ],
   "src/serverFunctions/rank-tracking.ts": [
+    "updateRankTrackingConfig",
     "triggerRankCheck",
     "refreshTrackingKeywordMetrics",
   ],
@@ -41,10 +42,11 @@ export const SPEND_SERVER_FUNCTIONS: Record<string, string[]> = {
   ],
   "src/serverFunctions/ai-search.ts": ["lookupBrand", "explorePrompt"],
   "src/serverFunctions/projectWebsite.ts": ["researchProjectWebsite"],
-  "src/serverFunctions/serp-locations.ts": [
-    "prewarmSerpLocations",
-    "searchSerpLocations",
-  ],
+  // Deliberately NOT gated: serp-locations.ts (searchSerpLocations,
+  // prewarmSerpLocations) and the search_serp_locations MCP tool only read
+  // DataForSEO's locations list through fetchSerpLocationsForCountry. That
+  // endpoint is free (cost 0, no billing envelope) and cached in KV for 30
+  // days, so clients can use the location picker.
 };
 
 /**
@@ -94,5 +96,4 @@ export const SPEND_MCP_TOOLS = [
   "research_ai_visibility_prompts",
   "run_ai_visibility_check",
   "set_ai_visibility_schedule",
-  "search_serp_locations",
 ] as const;

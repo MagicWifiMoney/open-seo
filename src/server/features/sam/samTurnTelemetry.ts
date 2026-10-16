@@ -13,7 +13,7 @@ type SamTurnStatus =
   | "refused"
   | "interrupted";
 
-type SamRefusalReason = "no_session" | "credits" | "no_access" | "no_spend";
+type SamRefusalReason = "no_session" | "credits" | "no_access";
 
 // Tool failures reach the model as a `{ error }` output rather than a thrown
 // error (samChatTools adaptMcpTool / scrapeTools), so Think reports them as

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { requireAuthenticatedContext } from "@/serverFunctions/middleware";
 import { fetchSerpLocationsForCountry } from "@/server/lib/dataforseo/serp-locations";
 import { rankSerpLocations } from "@/shared/serp-location-search";
-import { requireSpend } from "@/server/auth/org-gate";
 
 /** ISO 3166-1 alpha-2, e.g. "us" — DataForSEO rejects country names. */
 const countryCodeField = z.string().regex(/^[a-z]{2}$/i);
@@ -16,8 +15,7 @@ const searchSerpLocationsSchema = z.object({
 export const searchSerpLocations = createServerFn({ method: "POST" })
   .middleware(requireAuthenticatedContext)
   .validator(searchSerpLocationsSchema)
-  .handler(async ({ data, context }) => {
-    requireSpend(context);
+  .handler(async ({ data }) => {
     const all = await fetchSerpLocationsForCountry(data.countryCode);
     return rankSerpLocations(data.query, all, data.countryCode);
   });
@@ -30,8 +28,7 @@ export const searchSerpLocations = createServerFn({ method: "POST" })
 export const prewarmSerpLocations = createServerFn({ method: "POST" })
   .middleware(requireAuthenticatedContext)
   .validator(z.object({ countryCode: countryCodeField }))
-  .handler(async ({ data, context }) => {
-    requireSpend(context);
+  .handler(async ({ data }) => {
     await fetchSerpLocationsForCountry(data.countryCode);
     return { warmed: true };
   });

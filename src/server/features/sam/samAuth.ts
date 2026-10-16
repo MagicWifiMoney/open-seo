@@ -1,7 +1,5 @@
-import { canSpend } from "@/lib/org-permissions";
 import { MCP_SCOPE } from "@/lib/oauth-resource";
 import { resolveAccessRole } from "@/server/auth/accessRole";
-import { SPEND_NOT_ALLOWED_MESSAGE } from "@/server/auth/spendFunctions";
 import type { ToolAuthContext } from "@/server/mcp/context";
 
 // Delegated/self-host orgs have no member rows, so a missing row means the
@@ -29,10 +27,4 @@ export function buildSamAuthContext(
     clientId: null,
     scopes: [MCP_SCOPE],
   };
-}
-
-// Every SAM turn spends OpenRouter tokens and can call paid tools, so a role
-// without research:spend gets a free canned refusal instead of a model call.
-export function spendRefusalText(role: string): string | null {
-  return canSpend(role) ? null : SPEND_NOT_ALLOWED_MESSAGE;
 }

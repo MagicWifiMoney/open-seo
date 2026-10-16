@@ -5,3 +5,4 @@
 2026-10-16 09:15 CDT [claude-code] metrics-history - GSC/GA4 daily rows persisted in D1 with a flag-gated 7,37 cron ingest and 3 stored-history MCP tools; proven on new stage miller-ingest (GSC 191 days, GA4 1363 days, totals match live); live miller untouched, deploy waits for Jake
 2026-10-16 09:56 CDT [claude-code] metrics-history - Dashboard keywords, new queries and Traffic page read stored daily rows when coverage exists, live Google otherwise
 2026-10-16 16:10 CDT [claude-code] client-role - new read-only client org role (no research:spend), ACCESS_CLIENT_DOMAINS/EMAILS mapping, requireSpend on all paid server fns, spend flag on MCP and SAM tools, cache-only dashboard link cards
+2026-10-16 16:20 CDT [claude-code] client-role - SAM chat open to clients with spend tools refused; updateRankTrackingConfig gated; free serp-locations list ungated
