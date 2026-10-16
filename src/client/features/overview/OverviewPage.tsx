@@ -11,7 +11,6 @@ import type { OverviewSearch } from "@/types/schemas/overview";
 import { OverviewKpis } from "./OverviewKpis";
 import { OverviewStatTiles } from "./OverviewStatTiles";
 import { buildOverviewView, spanLabel as label } from "./overviewView";
-import { OverviewOffsiteAuthority } from "./OverviewOffsiteAuthority";
 import { OverviewPages } from "./OverviewPages";
 import { OverviewRankings } from "./OverviewRankings";
 import {
@@ -238,8 +237,6 @@ export function OverviewPage({
                 }
               />
             ) : null}
-
-            <OverviewOffsiteAuthority projectId={projectId} />
 
             {ga4Coverage && current ? (
               <OverviewTrend
