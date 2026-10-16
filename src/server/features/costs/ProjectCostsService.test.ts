@@ -144,4 +144,45 @@ describe("getProjectCosts", () => {
       true,
     );
   });
+
+  it("totals every row while capping lookups at 500", async () => {
+    const rows = Array.from({ length: 520 }, (_, i) =>
+      ledger(
+        `2026-10-11T${String(Math.floor(i / 60)).padStart(2, "0")}:${String(i % 60).padStart(2, "0")}:00.000Z`,
+        0.01,
+        { source: "keyword_research", operation: `Lookup ${i}` },
+      ),
+    );
+    await CostLedgerRepository.recordMany(rows);
+    const result = await getProjectCosts({
+      projectId: P,
+      from: "2026-10-01",
+      to: "2026-10-15",
+    });
+    expect(result.lookups).toHaveLength(500);
+    expect(result.lookups[0]?.operation).toBe("Lookup 519");
+    expect(result.totals.usd).toBe(5.2);
+    expect(result.totals.bySource).toEqual({ keyword_research: 5.2 });
+    expect(result.days).toEqual([
+      { date: "2026-10-11", usd: 5.2, bySource: { keyword_research: 5.2 } },
+    ]);
+  });
+
+  it("opens the all-time window at the earliest ledger row or run", async () => {
+    await CostLedgerRepository.record(ledger("2026-09-20T10:00:00.000Z", 0.1));
+    const fromLedger = await getProjectCosts({
+      projectId: P,
+      to: "2026-10-15",
+    });
+    expect(fromLedger.window).toEqual({ from: "2026-09-20", to: "2026-10-15" });
+
+    await CostLedgerRepository.record(ledger("2026-09-01T10:00:00.000Z", 0.1));
+    await testDb.client.executeMultiple(`
+      INSERT INTO audits (id, project_id, started_by_user_id, start_url, status, config, started_at)
+        VALUES ('audit-old', 'project', 'u', 'https://openseo.so', 'completed', '{}', '2026-08-15 08:00:00');
+    `);
+    const fromRun = await getProjectCosts({ projectId: P, to: "2026-10-15" });
+    expect(fromRun.window.from).toBe("2026-08-15");
+    expect(fromRun.runs.map((r) => r.runId)).toContain("audit-old");
+  });
 });

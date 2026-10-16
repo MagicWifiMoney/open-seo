@@ -88,8 +88,11 @@ export function formatDateTime(iso: string): string {
   });
 }
 
-function csvText(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
+/** Spreadsheet apps run cells starting with these as formulas. */
+export function csvText(value: string): string {
+  const risky = /^[\t\r]/.test(value) || /^[=+\-@]/.test(value.trimStart());
+  const safe = risky ? `'${value}` : value;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 /** Numbers and dates stay bare; every string is quoted. */

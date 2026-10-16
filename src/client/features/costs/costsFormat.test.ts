@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatUsd, rangeWindow, toCsv, topSources } from "./costsFormat";
+import {
+  csvText,
+  formatUsd,
+  rangeWindow,
+  toCsv,
+  topSources,
+} from "./costsFormat";
 
 describe("formatUsd", () => {
   it("uses 2 decimals from one cent up", () => {
@@ -39,5 +45,11 @@ describe("helpers", () => {
         ],
       ),
     ).toBe('"a","b"\n"x ""y""",1.5\n,2');
+  });
+  it("neutralizes spreadsheet formulas", () => {
+    for (const ch of ["=", "+", "-", "@", "\t", "\r"])
+      expect(csvText(`${ch}SUM(A1)`)).toBe(`"'${ch}SUM(A1)"`);
+    expect(csvText("  =1+1")).toBe(`"'  =1+1"`);
+    expect(csvText("boat rental")).toBe('"boat rental"');
   });
 });

@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, min, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   aiMatches,
@@ -267,9 +267,32 @@ async function listAudits(
   }));
 }
 
+/** Earliest run start across rank checks, AI runs and audits, as an ISO day. */
+async function earliestRunDay(projectId: string): Promise<string | null> {
+  const [rank, ai, audit] = await Promise.all([
+    db
+      .select({ at: min(rankCheckRuns.startedAt) })
+      .from(rankCheckRuns)
+      .where(eq(rankCheckRuns.projectId, projectId)),
+    db
+      .select({ at: min(aiRuns.createdAt) })
+      .from(aiRuns)
+      .where(eq(aiRuns.projectId, projectId)),
+    db
+      .select({ at: min(audits.startedAt) })
+      .from(audits)
+      .where(eq(audits.projectId, projectId)),
+  ]);
+  const days = [rank[0]?.at, ai[0]?.at, audit[0]?.at]
+    .filter((at): at is string => typeof at === "string" && at.length >= 10)
+    .map((at) => at.slice(0, 10));
+  return days.length ? days.reduce((a, b) => (a < b ? a : b)) : null;
+}
+
 export const CostRunReads = {
   listRankRuns,
   listSnapshotKeywords,
   listAiRuns,
   listAudits,
+  earliestRunDay,
 };

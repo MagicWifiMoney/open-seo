@@ -16,7 +16,6 @@ import type {
   ProjectCostsRun,
 } from "@/types/schemas/costs";
 
-const DEFAULT_WINDOW_DAYS = 30;
 const LOOKUP_LIMIT = 500;
 const OPEN_STATUSES = new Set(["pending", "queued", "running"]);
 
@@ -28,13 +27,24 @@ function addTo(record: Record<string, number>, key: string, usd: number) {
   record[key] = roundUsd((record[key] ?? 0) + usd);
 }
 
-function resolveWindow(from?: string, to?: string) {
-  const end = to ?? new Date().toISOString().slice(0, 10);
-  const start =
-    from ??
-    new Date(Date.parse(`${end}T00:00:00Z`) - (DEFAULT_WINDOW_DAYS - 1) * 864e5)
-      .toISOString()
-      .slice(0, 10);
+const FALLBACK_HISTORY_DAYS = 365;
+
+const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
+/** Without `from`, the window opens at the project's earliest ledger row or run. */
+async function resolveWindow(projectId: string, from?: string, to?: string) {
+  const end = to ?? isoDay(Date.now());
+  if (from) return { from, to: end };
+  const [ledgerFirst, runFirst] = await Promise.all([
+    CostLedgerRepository.earliestAt(projectId),
+    CostRunReads.earliestRunDay(projectId),
+  ]);
+  const candidates = [ledgerFirst?.slice(0, 10), runFirst].filter(
+    (day): day is string => !!day,
+  );
+  const start = candidates.length
+    ? candidates.reduce((a, b) => (a < b ? a : b))
+    : isoDay(Date.parse(`${end}T00:00:00Z`) - FALLBACK_HISTORY_DAYS * 864e5);
   return { from: start, to: end };
 }
 
@@ -164,31 +174,32 @@ function parseConfig(raw: string) {
   }
 }
 
-function summarize(rows: CostLedgerRow[]) {
+function summarize(
+  totalsRows: Awaited<ReturnType<typeof CostLedgerRepository.totalsByProject>>,
+  lookupRows: CostLedgerRow[],
+) {
   const totals: ProjectCostsResponse["totals"] = {
     usd: 0,
     byProvider: {},
     bySource: {},
   };
-  for (const row of rows) {
-    totals.usd += row.costUsd;
-    addTo(totals.byProvider, row.provider, row.costUsd);
-    addTo(totals.bySource, row.source, row.costUsd);
+  for (const { provider, usd } of totalsRows.byProvider) {
+    totals.usd += usd;
+    addTo(totals.byProvider, provider, usd);
   }
+  for (const { source, usd } of totalsRows.bySource)
+    addTo(totals.bySource, source, usd);
   totals.usd = roundUsd(totals.usd);
-  const lookups = rows
-    .filter((row) => !row.runId)
-    .slice(0, LOOKUP_LIMIT)
-    .map((row) => ({
-      id: row.id,
-      occurredAt: row.occurredAt,
-      source: row.source,
-      operation: row.operation,
-      requestSummary: row.requestSummary,
-      resultCount: row.resultCount,
-      costUsd: row.costUsd,
-      status: row.status,
-    }));
+  const lookups = lookupRows.map((row) => ({
+    id: row.id,
+    occurredAt: row.occurredAt,
+    source: row.source,
+    operation: row.operation,
+    requestSummary: row.requestSummary,
+    resultCount: row.resultCount,
+    costUsd: row.costUsd,
+    status: row.status,
+  }));
   return { totals, lookups };
 }
 
@@ -197,15 +208,24 @@ export async function getProjectCosts(input: {
   from?: string;
   to?: string;
 }): Promise<Omit<ProjectCostsResponse, "balanceUsd">> {
-  const window = resolveWindow(input.from, input.to);
-  const [rows, dayRows, ledgerSince, rank, ai, audit] = await Promise.all([
-    CostLedgerRepository.listByProject(input.projectId, window),
-    CostLedgerRepository.sumByDay(input.projectId, window.from, window.to),
-    CostLedgerRepository.earliestAt(input.projectId),
-    rankRuns(input.projectId, window.from, window.to),
-    aiRunRows(input.projectId, window.from, window.to),
-    auditRows(input.projectId, window.from, window.to),
-  ]);
+  const window = await resolveWindow(input.projectId, input.from, input.to);
+  const [totalsRows, lookupRows, dayRows, ledgerSince, rank, ai, audit] =
+    await Promise.all([
+      CostLedgerRepository.totalsByProject(
+        input.projectId,
+        window.from,
+        window.to,
+      ),
+      CostLedgerRepository.listLookups(input.projectId, {
+        ...window,
+        limit: LOOKUP_LIMIT,
+      }),
+      CostLedgerRepository.sumByDay(input.projectId, window.from, window.to),
+      CostLedgerRepository.earliestAt(input.projectId),
+      rankRuns(input.projectId, window.from, window.to),
+      aiRunRows(input.projectId, window.from, window.to),
+      auditRows(input.projectId, window.from, window.to),
+    ]);
 
   const days = new Map<string, ProjectCostsResponse["days"][number]>();
   for (const { date, source, usd } of dayRows) {
@@ -215,7 +235,7 @@ export async function getProjectCosts(input: {
     days.set(date, day);
   }
 
-  const { totals, lookups } = summarize(rows);
+  const { totals, lookups } = summarize(totalsRows, lookupRows);
   // oxlint-disable-next-line unicorn/no-array-sort -- fresh array; tsconfig lib lacks toSorted
   const runs = [...rank, ...ai, ...audit].sort((a, b) =>
     b.startedAt.localeCompare(a.startedAt),

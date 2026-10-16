@@ -1,4 +1,14 @@
-import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lte,
+  sql,
+} from "drizzle-orm";
 import { db } from "@/db";
 import { runBatch } from "@/db/runBatch";
 import { costLedger } from "@/db/schema";
@@ -110,6 +120,64 @@ async function listByProject(
   return limit ? query.limit(limit) : query;
 }
 
+export type LedgerTotals = {
+  byProvider: { provider: string; usd: number }[];
+  bySource: { source: string; usd: number }[];
+};
+
+/** Window totals computed in SQL so no row is loaded. */
+async function totalsByProject(
+  projectId: string,
+  from: string,
+  to: string,
+): Promise<LedgerTotals> {
+  const where = and(
+    eq(costLedger.projectId, projectId),
+    gte(costLedger.occurredAt, dayStart(from)),
+    lte(costLedger.occurredAt, dayEnd(to)),
+  );
+  const usd = sql<number>`sum(${costLedger.costUsd})`;
+  const [byProvider, bySource] = await Promise.all([
+    db
+      .select({ provider: costLedger.provider, usd })
+      .from(costLedger)
+      .where(where)
+      .groupBy(costLedger.provider),
+    db
+      .select({ source: costLedger.source, usd })
+      .from(costLedger)
+      .where(where)
+      .groupBy(costLedger.source),
+  ]);
+  return {
+    byProvider: byProvider.map((r) => ({
+      provider: r.provider,
+      usd: Number(r.usd),
+    })),
+    bySource: bySource.map((r) => ({ source: r.source, usd: Number(r.usd) })),
+  };
+}
+
+/** Newest rows not tied to a run (individual lookups), capped at `limit`. */
+async function listLookups(
+  projectId: string,
+  { from, to, limit }: { from: string; to: string; limit: number },
+): Promise<CostLedgerRow[]> {
+  return db
+    .select()
+    .from(costLedger)
+    .where(
+      and(
+        eq(costLedger.projectId, projectId),
+        isNull(costLedger.runId),
+        gte(costLedger.occurredAt, dayStart(from)),
+        lte(costLedger.occurredAt, dayEnd(to)),
+      ),
+    )
+    .orderBy(desc(costLedger.occurredAt), desc(costLedger.id))
+    .limit(limit);
+}
+
 async function sumByRun(runIds: string[]): Promise<Map<string, RunCostSum>> {
   const sums = new Map<string, RunCostSum>();
   for (let i = 0; i < runIds.length; i += RUN_ID_CHUNK) {
@@ -176,6 +244,8 @@ export const CostLedgerRepository = {
   record,
   recordMany,
   listByProject,
+  totalsByProject,
+  listLookups,
   sumByRun,
   sumByDay,
   earliestAt,
