@@ -16,6 +16,7 @@ import {
   getCurrentAuthRedirectFromHref,
   getSignInSearch,
 } from "@/lib/auth-redirect";
+import { SamBubble } from "@/client/features/sam/SamBubble";
 import { getProjectAccess } from "@/serverFunctions/projects";
 
 export const Route = createFileRoute("/_app/p/$projectId")({
@@ -83,5 +84,10 @@ function ProjectLayout() {
     setLastProjectId(projectId);
   }, [projectId, hasAccess, isSettingsPage]);
 
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      {hasAccess ? <SamBubble projectId={projectId} /> : null}
+    </>
+  );
 }
