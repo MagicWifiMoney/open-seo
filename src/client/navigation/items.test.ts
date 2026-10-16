@@ -11,6 +11,7 @@ describe("getProjectNavGroups", () => {
   it("shows everything to a role that can spend", () => {
     expect(labels(true)).toEqual(
       expect.arrayContaining([
+        "Costs",
         "Domain Overview",
         "Backlinks",
         "Prompt Research",
@@ -46,6 +47,7 @@ describe("getProjectNavGroups", () => {
         "Rank Tracking",
         "Prompt Tracking",
         "Site Audit",
+        "Costs",
         "Reports",
       ]),
     );

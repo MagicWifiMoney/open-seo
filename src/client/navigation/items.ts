@@ -5,6 +5,7 @@ import {
   Brain,
   ChartLine,
   ClipboardCheck,
+  Coins,
   FileText,
   Globe,
   LayoutDashboard,
@@ -70,6 +71,11 @@ const projectNavItems = [
     to: "/p/$projectId/audit" as const,
     label: "Site Audit",
     icon: ClipboardCheck,
+  },
+  {
+    to: "/p/$projectId/costs" as const,
+    label: "Costs",
+    icon: Coins,
   },
   {
     to: "/p/$projectId/ai-visibility" as const,
@@ -173,6 +179,7 @@ export function getProjectNavGroups(projectId: string, canSpend = true) {
         byPath("/p/$projectId/rank-tracking"),
         byPath("/p/$projectId/saved"),
         byPath("/p/$projectId/audit"),
+        byPath("/p/$projectId/costs"),
       ],
     },
     {
