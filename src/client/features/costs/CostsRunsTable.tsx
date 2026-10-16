@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
+import { sort as sort_ } from "remeda";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/client/components/ui/badge";
 import {
@@ -117,7 +118,7 @@ export function CostsRunsTable({
   });
   const sorted = useMemo(() => {
     const dir = sort.desc ? -1 : 1;
-    return runs.toSorted((a, b) =>
+    return sort_(runs, (a, b) =>
       sort.key === "cost"
         ? dir * (a.costUsd - b.costUsd)
         : dir * a.startedAt.localeCompare(b.startedAt),

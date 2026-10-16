@@ -1,3 +1,4 @@
+import { sort } from "remeda";
 import type { CostSource } from "@/types/schemas/costs";
 
 /** `$0.0012` under one cent (up to 4 decimals, trailing zeros trimmed past 2),
@@ -28,7 +29,8 @@ export const SOURCE_LABELS: Record<CostSource, string> = {
 };
 
 export function sourceLabel(source: string): string {
-  return source in SOURCE_LABELS ? SOURCE_LABELS[source as CostSource] : source;
+  const labels: Record<string, string> = SOURCE_LABELS;
+  return labels[source] ?? source;
 }
 
 export const COST_RANGES = ["7d", "30d", "90d", "all"] as const;
@@ -60,10 +62,11 @@ export function topSources(
   bySource: Record<string, number>,
   count = 3,
 ): Array<{ source: string; usd: number }> {
-  return Object.entries(bySource)
-    .map(([source, usd]) => ({ source, usd }))
-    .toSorted((a, b) => b.usd - a.usd)
-    .slice(0, count);
+  const items = Object.entries(bySource).map(([source, usd]) => ({
+    source,
+    usd,
+  }));
+  return sort(items, (a, b) => b.usd - a.usd).slice(0, count);
 }
 
 export function formatDay(date: string): string {
