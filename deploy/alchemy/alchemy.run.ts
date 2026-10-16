@@ -474,6 +474,12 @@ export default Alchemy.Stack(
       env: {
         ...resources,
         ...dataEnv,
+        ...(stage === "miller"
+          ? {
+              MILLER_HUB_FEED_ENABLED: "true",
+              MILLER_HUB_TRACKER_ID: "dd63719c-2cea-460e-ba5a-a369c772fba4",
+            }
+          : {}),
         AUTH_MODE: authMode,
         DATABASE_PROVIDER: databaseProvider || "d1",
         BETTER_AUTH_URL: authUrl,

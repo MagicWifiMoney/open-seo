@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sort } from "remeda";
 import { RankTrackingRepository } from "../repositories/RankTrackingRepository";
 import { getLatestResults } from "./rankTrackingResults";
 
@@ -13,8 +14,8 @@ type FeedEnv = Pick<
 >;
 type Device = "desktop" | "mobile";
 class FeedDataError extends Error {
-  constructor(readonly code: string) {
-    super(code);
+  get code(): string {
+    return this.message;
   }
 }
 
@@ -73,6 +74,10 @@ function position(value: number | null): number | null {
   if (!Number.isInteger(value) || value <= 0)
     throw new FeedDataError("invalid_saved_rank");
   return value;
+}
+
+function deviceStatus(value: { position: number | null } | undefined) {
+  return !value ? "unchecked" : value.position === null ? "out" : "ranked";
 }
 
 async function loadSnapshot(configId: string) {
@@ -139,17 +144,16 @@ async function loadSnapshot(configId: string) {
     const desktop = deviceData("desktop"),
       mobile = deviceData("mobile");
     const selected = devices.map(deviceData);
-    const ranked = selected
-      .filter((value) => value?.position != null)
-      .sort((a, b) => a!.position! - b!.position!);
+    const ranked = sort(
+      selected.filter((value) => value?.position != null),
+      (a, b) => a!.position! - b!.position!,
+    );
     const best = ranked[0];
     const status = best
       ? "ranked"
       : selected.some((value) => !value)
         ? "unchecked"
         : "out";
-    const deviceStatus = (value: typeof desktop) =>
-      !value ? "unchecked" : value.position === null ? "out" : "ranked";
     return {
       keyword,
       position: best?.position ?? null,
@@ -164,10 +168,12 @@ async function loadSnapshot(configId: string) {
       status,
     };
   });
-  const dates = ranks
-    .flatMap((row) => [row.desktopCheckedAt, row.mobileCheckedAt])
-    .filter((date): date is string => date !== null)
-    .sort();
+  const dates = sort(
+    ranks
+      .flatMap((row) => [row.desktopCheckedAt, row.mobileCheckedAt])
+      .filter((date): date is string => date !== null),
+    (a, b) => a.localeCompare(b),
+  );
   const asOf = dates.at(-1);
   if (!asOf) throw new FeedDataError("no_saved_snapshot_date");
   const checked = results.rows.filter((row) =>

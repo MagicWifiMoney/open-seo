@@ -54,20 +54,24 @@ vi.mock("@/server/gdpr/storage-erasure", () => ({
   handleGdprStorageErasure: vi.fn(),
 }));
 vi.mock("@/server/workflows/RankCheckWorkflow", () => ({
-  RankCheckWorkflow: class {},
+  RankCheckWorkflow: vi.fn(),
 }));
 vi.mock("@/server/workflows/AiVisibilityWorkflow", () => ({
-  AiVisibilityWorkflow: class {},
+  AiVisibilityWorkflow: vi.fn(),
 }));
 vi.mock("@/server/features/sam/SamChatAgent", () => ({
-  SamChatAgent: class {},
+  SamChatAgent: vi.fn(),
 }));
 
 it("wires only the exact public path before authentication and passes the original host", async () => {
   const req = new Request(
     "https://open-seo-miller.magicwifimoney.workers.dev/api/public/miller-scoreboard?history=1",
   );
+  // Unused bindings are omitted because all app collaborators are mocked.
+  // oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
   const env = { AUTH_MODE: "cloudflare_access" } as Env;
+  // Only waitUntil is reachable through this routing test.
+  // oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
   const ctx = { waitUntil: vi.fn() } as unknown as ExecutionContext;
   expect(await (await worker.fetch(req, env, ctx)).text()).toBe("saved feed");
   expect(mocks.feed).toHaveBeenCalledWith(req, env);
