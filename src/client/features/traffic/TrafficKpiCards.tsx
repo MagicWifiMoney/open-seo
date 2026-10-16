@@ -15,7 +15,7 @@ import {
   formatPercent,
   formatSigned,
   COMPARE_LABELS,
-  KEY_EVENTS_NOT_COMPARABLE,
+  KEY_EVENT_TRACKING_NOTE,
   METRIC_LABELS,
 } from "./trafficFormat";
 import {
@@ -26,8 +26,14 @@ import {
 } from "./trafficMath";
 
 function spanText(period: AveragedPeriod, unit: string): string {
-  return `${formatDay(period.start)} to ${formatDay(period.end)} (${period.periods} complete ${unit}${period.periods === 1 ? "" : "s"})`;
+  const length = period.days
+    ? `${period.days} days`
+    : `${period.periods} complete ${unit}${period.periods === 1 ? "" : "s"}`;
+  return `${formatDay(period.start)} to ${formatDay(period.end)} (${length})`;
 }
+
+/** Key events are left off the top row: tracking changed at launch. */
+const KPI_METRICS = TRAFFIC_METRICS.filter((metric) => metric !== "key_events");
 
 export function TrafficKpiCards({
   post,
@@ -48,7 +54,7 @@ export function TrafficKpiCards({
       ? compareAverages(post.averages, reference.averages)
       : null;
   const referenceName =
-    compare === "baseline" ? "Pre-launch average" : "Same weeks last year";
+    compare === "baseline" ? "12 weeks before launch" : "Same weeks last year";
 
   return (
     <section className="space-y-3" aria-label="Post-launch averages per week">
@@ -58,8 +64,9 @@ export function TrafficKpiCards({
             Average per week since launch
           </h2>
           <p className="text-sm text-muted-foreground">
-            Complete Monday to Sunday weeks only, so a partial week never skews
-            the average.
+            {compare === "baseline"
+              ? "Launch day to the latest data day, against the 12 weeks before launch. Both are shown per week, the same comparison as the Overview."
+              : "Complete Monday to Sunday weeks only, so a partial week never skews the average."}
           </p>
         </div>
         <ToggleGroup
@@ -87,8 +94,8 @@ export function TrafficKpiCards({
           post-launch average to show.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {TRAFFIC_METRICS.map((metric: TrafficMetric) => {
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {KPI_METRICS.map((metric: TrafficMetric) => {
             const comparison = comparisons?.[metric];
             const percent = comparison?.delta.percent ?? null;
             return (
@@ -110,15 +117,15 @@ export function TrafficKpiCards({
                     }`}
                   >
                     {formatSigned(comparison.delta.absolute)} / week (
-                    {formatPercent(percent)}) {COMPARE_LABELS[compare]}
+                    {formatPercent(percent)}) vs{" "}
+                    {formatDay(reference?.start ?? "")} to{" "}
+                    {formatDay(reference?.end ?? "")}
                   </p>
                 ) : (
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {metric === "key_events"
-                      ? KEY_EVENTS_NOT_COMPARABLE
-                      : compare === "yoy"
-                        ? "No data for the same weeks last year."
-                        : "No complete pre-launch weeks."}
+                    {compare === "yoy"
+                      ? "No data for the same weeks last year."
+                      : "No complete pre-launch weeks."}
                   </p>
                 )}
                 {comparison ? (
@@ -143,6 +150,9 @@ export function TrafficKpiCards({
           })}
         </div>
       )}
+      <p className="text-xs text-muted-foreground">
+        {KEY_EVENT_TRACKING_NOTE} Key events stay in the table below.
+      </p>
       {compare === "yoy" ? (
         <p className="text-xs text-muted-foreground">
           Seasonality check: the same Monday to Sunday weeks one year earlier

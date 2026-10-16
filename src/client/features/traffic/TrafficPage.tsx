@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { preLaunchWindow } from "@/client/features/overview/overviewRange";
 import { QueryError } from "@/client/components/QueryState";
 import { Skeleton } from "@/client/components/ui/skeleton";
 import { GoogleConnectionCard } from "@/client/features/integrations/GoogleConnectionCard";
@@ -8,6 +9,7 @@ import type { TrafficSearch } from "@/types/schemas/traffic";
 import { TrafficChart } from "./TrafficChart";
 import { TrafficControls } from "./TrafficControls";
 import { TrafficKpiCards } from "./TrafficKpiCards";
+import { launchWindowPeriods } from "./trafficLaunchWindow";
 import { TrafficTable } from "./TrafficTable";
 import { buildTableRows } from "./trafficCsv";
 import {
@@ -18,13 +20,13 @@ import {
 } from "./trafficFormat";
 import {
   baselineForGranularity,
-  baselineAverage,
   fillDays,
   isComparableAcrossLaunch,
   launchBucketKey,
   metricField,
   postLaunchAverage,
   resolveRange,
+  straddlesLaunch,
   visibleBuckets,
   yoyAverage,
 } from "./trafficMath";
@@ -65,11 +67,19 @@ export function TrafficPage({
       selected,
     );
     // Key events are not like-for-like across launch: no baseline for them.
+    // The reference is the same 12 weeks before launch the Overview uses.
+    const preStart = preLaunchWindow(launch).start;
     const baselineBucket = isComparableAcrossLaunch(metric)
-      ? baselineForGranularity(days, granularity, coverage, launch)
+      ? baselineForGranularity(days, granularity, coverage, launch, preStart)
       : null;
     const field = metricField(metric);
-    const post = postLaunchAverage(days, "week", coverage, launch);
+    const launchWindow = launchWindowPeriods(days, coverage, launch);
+    const post = launchWindow.post;
+    // Year-on-year still compares whole Monday to Sunday weeks.
+    const weeklyPost = postLaunchAverage(days, "week", coverage, launch);
+    const straddle = buckets.find((bucket) =>
+      straddlesLaunch(bucket, launch, granularity),
+    );
     return {
       coverage,
       selected,
@@ -80,11 +90,18 @@ export function TrafficPage({
         buckets,
         baselineBucket ? baselineBucket.averages[field] : null,
         field,
+        launch,
+        granularity,
       ),
+      straddleKey: straddle ? straddle.start : null,
       launchKey: launchBucketKey(launch, granularity, buckets),
       post,
-      baseline: baselineAverage(days, "week", coverage, launch),
-      yoy: post ? yoyAverage(days, post, coverage) : null,
+      weeklyPost,
+      baseline: launchWindow.baseline,
+      baselineSpan: baselineBucket
+        ? `${formatDay(baselineBucket.start)} to ${formatDay(baselineBucket.end)}`
+        : undefined,
+      yoy: weeklyPost ? yoyAverage(days, weeklyPost, coverage) : null,
     };
   }, [history, range, launch, granularity, metric, search.from, search.to]);
 
@@ -94,9 +111,10 @@ export function TrafficPage({
         <div>
           <h1 className="text-2xl font-semibold">Traffic history</h1>
           <p className="text-sm text-muted-foreground">
-            Daily Google Analytics traffic across the whole property history,
-            with the site launch marked and everything after it compared with
-            the pre-launch average.
+            Google Analytics traffic from the 12 weeks before launch to now,
+            with the site launch marked and everything since it compared with
+            the 12 weeks before launch, the same comparison as the Overview.
+            Pick another range to see more history.
           </p>
         </div>
 
@@ -141,7 +159,7 @@ export function TrafficPage({
               </p>
             ) : null}
             <TrafficKpiCards
-              post={view.post}
+              post={search.compare === "yoy" ? view.weeklyPost : view.post}
               baseline={view.baseline}
               yoy={view.yoy}
               compare={search.compare}
@@ -159,6 +177,7 @@ export function TrafficPage({
                     ? view.baselineBucket.averages[metricField(metric)]
                     : null
                 }
+                straddleKey={view.straddleKey}
                 baselineNote={
                   isComparableAcrossLaunch(metric)
                     ? undefined
@@ -177,6 +196,7 @@ export function TrafficPage({
               granularity={granularity}
               metric={metric}
               hasBaseline={view.baselineBucket !== null}
+              baselineSpan={view.baselineSpan}
               filename={`traffic-${channel}-${granularity}-${view.selected.start}-to-${view.selected.end}.csv`}
             />
             <p className="text-xs text-muted-foreground">

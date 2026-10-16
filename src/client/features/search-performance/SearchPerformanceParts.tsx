@@ -14,19 +14,8 @@ import {
 import { TablePagination } from "@/client/components/table/TablePagination";
 import { Button } from "@/client/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/client/components/ui/table";
-import {
   buildDimensionColumns,
   buildStrikingColumns,
-  formatCount,
-  formatCtr,
-  formatPosition,
   type Report,
   type SearchPerformanceTableRow,
 } from "@/client/features/search-performance/SearchPerformanceColumns";
@@ -54,6 +43,35 @@ function strikingExportTable(report: Report): ExportTable {
       row.impressions,
       row.clicks,
       row.position,
+    ]),
+  };
+}
+
+function moversExportTable(report: Report): ExportTable {
+  const stamp = `${report.range.startDate}-to-${report.range.endDate}`;
+  return {
+    filename: `search-performance-movers-${stamp}`,
+    headers: [
+      "Query",
+      "Brand",
+      "Clicks",
+      "Clicks before (scaled)",
+      "Click change",
+      "Position",
+      "Position before",
+      "Places moved up",
+    ],
+    rows: report.movers.map((row) => [
+      row.query,
+      row.isBrand ? "yes" : "no",
+      row.clicks,
+      Math.round(row.prevClicks * 10) / 10,
+      Math.round(row.clickChange * 10) / 10,
+      row.position ?? "",
+      row.prevPosition ?? "",
+      row.positionChange === null
+        ? ""
+        : Math.round(row.positionChange * 10) / 10,
     ]),
   };
 }
@@ -91,6 +109,13 @@ function runExport(table: ExportTable, target: ExportTarget): Promise<void> {
   });
 }
 
+export function exportMovers(
+  report: Report,
+  target: ExportTarget,
+): Promise<void> {
+  return runExport(moversExportTable(report), target);
+}
+
 export function exportStriking(
   report: Report,
   target: ExportTarget,
@@ -108,81 +133,6 @@ export function exportDimensionRows(
 ): Promise<void> {
   const stamp = `${range.startDate}-to-${range.endDate}`;
   return runExport(dimensionExportTable(dimension, rows, stamp), target);
-}
-
-type Delta = { text: string; improved: boolean } | null;
-
-function percentDelta(current: number, previous: number): Delta {
-  if (previous <= 0) return null;
-  const change = (current - previous) / previous;
-  const pct = (change * 100).toFixed(1);
-  return { text: `${change >= 0 ? "+" : ""}${pct}%`, improved: change >= 0 };
-}
-
-/** Position falls as rankings improve, so the delta is inverted. */
-function positionDelta(current: number, previous: number): Delta {
-  if (previous <= 0 || current <= 0) return null;
-  const change = previous - current;
-  return {
-    text: `${change >= 0 ? "+" : ""}${change.toFixed(1)}`,
-    improved: change >= 0,
-  };
-}
-
-export function TotalsTable({ report }: { report: Report }) {
-  const { totals, prevTotals, range } = report;
-  const deltaTitle = `Compared with ${range.prevStartDate} to ${range.prevEndDate}`;
-  const metrics = [
-    {
-      label: "Clicks",
-      value: formatCount(totals.clicks),
-      delta: percentDelta(totals.clicks, prevTotals.clicks),
-    },
-    {
-      label: "Impressions",
-      value: formatCount(totals.impressions),
-      delta: percentDelta(totals.impressions, prevTotals.impressions),
-    },
-    {
-      label: "Click-through rate",
-      value: formatCtr(totals.ctr),
-      delta: percentDelta(totals.ctr, prevTotals.ctr),
-    },
-    {
-      label: "Average position",
-      value: formatPosition(totals.position),
-      delta: positionDelta(totals.position, prevTotals.position),
-    },
-  ];
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-full">Metric</TableHead>
-            <TableHead className="min-w-32 text-right">Value</TableHead>
-            <TableHead className="min-w-32 text-right" title={deltaTitle}>
-              Change
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {metrics.map(({ label, value, delta }) => (
-            <TableRow key={label}>
-              <TableCell>{label}</TableCell>
-              <TableCell className="text-right tabular-nums">{value}</TableCell>
-              <TableCell
-                className={`text-right tabular-nums ${delta ? (delta.improved ? "text-success" : "text-destructive") : "text-muted-foreground"}`}
-                title={deltaTitle}
-              >
-                {delta?.text ?? "—"}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
 }
 
 export function DimensionTable({

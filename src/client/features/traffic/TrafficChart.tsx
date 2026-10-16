@@ -19,6 +19,7 @@ import {
   formatBucketLabel,
   formatDay,
   formatNumber,
+  LAUNCH_WEEK_NOTE,
   METRIC_LABELS,
 } from "./trafficFormat";
 import { metricField, type Bucket } from "./trafficMath";
@@ -58,6 +59,7 @@ export function TrafficChart({
   baselineValue,
   markerHidden = false,
   baselineNote,
+  straddleKey = null,
 }: {
   buckets: Bucket[];
   metric: TrafficMetric;
@@ -71,6 +73,9 @@ export function TrafficChart({
   markerHidden?: boolean;
   /** Replaces the baseline caption when no baseline is drawn on purpose. */
   baselineNote?: string;
+  /** Bucket key holding both old-site and new-site days; flagged in the
+   *  tooltip. */
+  straddleKey?: string | null;
 }) {
   const field = metricField(metric);
   const config = {
@@ -103,13 +108,16 @@ export function TrafficChart({
           <ChartTooltip
             content={
               <ChartTooltipContent
-                labelFormatter={(label: unknown) =>
-                  typeof label === "string"
-                    ? granularity === "day"
+                labelFormatter={(label: unknown) => {
+                  if (typeof label !== "string") return "";
+                  const text =
+                    granularity === "day"
                       ? formatDay(label)
-                      : formatBucketLabel(label, granularity)
-                    : ""
-                }
+                      : formatBucketLabel(label, granularity);
+                  return label === straddleKey
+                    ? `${text}. ${LAUNCH_WEEK_NOTE}`
+                    : text;
+                }}
                 valueFormatter={(value) => formatNumber(Number(value))}
               />
             }

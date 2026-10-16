@@ -28,6 +28,8 @@ export type Averages = { sessions: number; users: number; keyEvents: number };
 export type AveragedPeriod = DateSpan & {
   /** Number of complete weeks (or months) averaged. */
   periods: number;
+  /** Set when the period is an exact day span rather than whole weeks. */
+  days?: number;
   averages: Averages;
 };
 
@@ -54,6 +56,20 @@ export function daysBetween(start: string, end: string): number {
   return (
     Math.round((parse(end).valueOf() - parse(start).valueOf()) / DAY_MS) + 1
   );
+}
+
+/** Weeks before launch that make up the reference window. The Overview's
+ *  preLaunchWindow (overviewRange) reads the same constant. */
+export const PRE_LAUNCH_WEEKS = 12;
+
+/** True for a week or month that holds both old-site and new-site days. Its
+ *  change must not be presented as a gain. Days never straddle. */
+export function straddlesLaunch(
+  bucket: DateSpan,
+  launch: string,
+  g: TrafficGranularity,
+): boolean {
+  return g !== "day" && bucket.start < launch && bucket.end >= launch;
 }
 
 /** Monday of the week containing `date` (weeks run Monday to Sunday). */
@@ -172,9 +188,11 @@ export function baselineAverage(
   g: Exclude<TrafficGranularity, "day">,
   coverage: DateSpan,
   launch: string,
+  /** Ignore buckets that start before this date (e.g. the 12-week window). */
+  from?: string,
 ): AveragedPeriod | null {
   const buckets = completeBuckets(buildBuckets(days, g, coverage)).filter(
-    (bucket) => bucket.end < launch,
+    (bucket) => bucket.end < launch && (!from || bucket.start >= from),
   );
   return toPeriod(buckets);
 }
@@ -297,6 +315,8 @@ export function resolveRange(input: {
       return clamp(launch, coverage.end);
     case "pre_launch":
       return clamp(coverage.start, addDays(launch, -1));
+    case "launch_window":
+      return clamp(addDays(launch, -PRE_LAUNCH_WEEKS * 7), coverage.end);
     case "custom": {
       const a = input.from ?? coverage.start;
       const b = input.to ?? coverage.end;
@@ -339,9 +359,10 @@ export function baselineForGranularity(
   g: TrafficGranularity,
   coverage: DateSpan,
   launch: string,
+  from?: string,
 ): AveragedPeriod | null {
-  if (g !== "day") return baselineAverage(days, g, coverage, launch);
-  const weekly = baselineAverage(days, "week", coverage, launch);
+  if (g !== "day") return baselineAverage(days, g, coverage, launch, from);
+  const weekly = baselineAverage(days, "week", coverage, launch, from);
   if (!weekly) return null;
   return {
     ...weekly,

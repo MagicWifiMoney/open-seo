@@ -14,6 +14,7 @@ import {
 } from "@/client/components/ui/select";
 
 const RANGE_LABELS: Record<SearchPerformanceDateRange, string> = {
+  since_launch: "Since launch",
   last_7_days: "Last 7 days",
   last_28_days: "Last 28 days",
   last_3_months: "Last 3 months",
@@ -57,7 +58,7 @@ export function SearchPerformanceSelects({
 }) {
   const device = search.device ?? ALL;
   const country = search.country ?? ALL;
-  const range = search.range ?? "last_28_days";
+  const range = search.range ?? "since_launch";
   const countryItems = [
     { value: ALL, label: "All countries" },
     ...(country !== ALL && !countries.some((row) => row.key === country)

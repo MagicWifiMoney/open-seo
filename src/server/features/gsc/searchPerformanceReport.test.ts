@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { launchComparison } from "@/client/features/overview/overviewRange";
 import {
+  buildMovers,
   buildStrikingDistanceRows,
   previousPeriod,
+  resolveSearchWindows,
+  scaleTotals,
   sumSearchTotals,
 } from "@/server/features/gsc/searchPerformanceReport";
 
@@ -96,4 +100,108 @@ describe("previousPeriod", () => {
       });
     },
   );
+});
+
+describe("resolveSearchWindows", () => {
+  const today = new Date("2026-10-16T12:00:00Z");
+
+  it("since launch runs launch to latest data day against the 12 weeks before launch", () => {
+    const windows = resolveSearchWindows("since_launch", today, "2026-08-15");
+    expect(windows).toMatchObject({
+      startDate: "2026-08-15",
+      endDate: "2026-10-13",
+      prevStartDate: "2026-05-23",
+      prevEndDate: "2026-08-14",
+      baseline: "launch",
+    });
+    // 60 days now against 84 days before launch.
+    expect(windows.scale).toBeCloseTo(60 / 84);
+  });
+
+  it("matches the Overview's launch comparison dates", () => {
+    const pair = launchComparison("2026-08-15", "2026-10-13");
+    const windows = resolveSearchWindows("since_launch", today, "2026-08-15");
+    expect(pair).not.toBeNull();
+    expect(windows.prevStartDate).toBe(pair?.reference.start);
+    expect(windows.prevEndDate).toBe(pair?.reference.end);
+    expect(windows.scale).toBe(pair?.reference.scale);
+  });
+
+  it("other ranges compare with the previous period, unscaled", () => {
+    const windows = resolveSearchWindows("last_28_days", today, "2026-08-15");
+    expect(windows).toMatchObject({
+      startDate: "2026-09-15",
+      endDate: "2026-10-13",
+      prevStartDate: "2026-08-17",
+      prevEndDate: "2026-09-14",
+      scale: 1,
+      baseline: "previous",
+    });
+  });
+
+  it("falls back to the last 28 days before launch is reached", () => {
+    const windows = resolveSearchWindows("since_launch", today, "2026-12-01");
+    expect(windows.baseline).toBe("previous");
+    expect(windows.endDate).toBe("2026-10-13");
+  });
+});
+
+describe("scaleTotals", () => {
+  it("scales additive totals and leaves ratios alone", () => {
+    expect(
+      scaleTotals({ clicks: 84, impressions: 840, ctr: 0.1, position: 7 }, 0.5),
+    ).toEqual({ clicks: 42, impressions: 420, ctr: 0.1, position: 7 });
+  });
+});
+
+const moverRow = (query: string, clicks: number, position: number) => ({
+  keys: [query],
+  clicks,
+  impressions: 100,
+  ctr: clicks / 100,
+  position,
+});
+
+describe("buildMovers", () => {
+  it("ranks by absolute click change, scales the reference and flags brand", () => {
+    const movers = buildMovers(
+      [
+        moverRow("miller estate sales", 30, 2),
+        moverRow("estate sale help", 10, 4),
+      ],
+      [
+        moverRow("miller estate sales", 40, 3),
+        moverRow("estate sale help", 4, 9),
+        moverRow("old query", 20, 5),
+      ],
+      0.5,
+    );
+    expect(movers.map((m) => m.query)).toEqual([
+      "miller estate sales",
+      "old query",
+      "estate sale help",
+    ]);
+    const brand = movers[0];
+    expect(brand).toMatchObject({
+      isBrand: true,
+      prevClicks: 20,
+      clickChange: 10,
+      positionChange: 1,
+    });
+    // Gone from the current window: no position, no position change.
+    expect(movers[1]).toMatchObject({
+      clicks: 0,
+      clickChange: -10,
+      position: null,
+      positionChange: null,
+      isBrand: false,
+    });
+    expect(movers[2].positionChange).toBe(5);
+  });
+
+  it("drops queries that did not move", () => {
+    expect(
+      buildMovers([moverRow("same", 10, 3)], [moverRow("same", 10, 3)], 1),
+    ).toEqual([]);
+  });
 });

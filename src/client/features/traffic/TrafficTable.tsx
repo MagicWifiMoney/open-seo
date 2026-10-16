@@ -20,6 +20,7 @@ import {
   formatNumber,
   formatPercent,
   KEY_EVENTS_NOT_COMPARABLE,
+  LAUNCH_WEEK_NOTE,
   METRIC_LABELS,
 } from "./trafficFormat";
 import { trafficCsv, type TrafficTableRow } from "./trafficCsv";
@@ -29,12 +30,15 @@ export function TrafficTable({
   granularity,
   metric,
   hasBaseline,
+  baselineSpan,
   filename,
 }: {
   rows: TrafficTableRow[];
   granularity: TrafficGranularity;
   metric: TrafficMetric;
   hasBaseline: boolean;
+  /** Printed dates of the periods the baseline averages. */
+  baselineSpan?: string;
   filename: string;
 }) {
   return (
@@ -44,7 +48,7 @@ export function TrafficTable({
           <h2 className="text-base font-semibold">Traffic by {granularity}</h2>
           <p className="text-xs text-muted-foreground">
             {hasBaseline
-              ? `Change column compares ${METRIC_LABELS[metric].toLowerCase()} with the pre-launch average.`
+              ? `Change column compares ${METRIC_LABELS[metric].toLowerCase()} with the average ${granularity} in the 12 weeks before launch${baselineSpan ? ` (${baselineSpan})` : ""}.`
               : metric === "key_events"
                 ? KEY_EVENTS_NOT_COMPARABLE
                 : "No complete pre-launch period to compare with."}
@@ -91,8 +95,15 @@ export function TrafficTable({
                 <TableCell className="text-right tabular-nums">
                   {formatNumber(row.keyEvents)}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {hasBaseline ? formatPercent(row.vsBaseline) : "n/a"}
+                <TableCell
+                  className="text-right tabular-nums"
+                  title={row.partialOldSite ? LAUNCH_WEEK_NOTE : undefined}
+                >
+                  {row.partialOldSite
+                    ? "Partial old-site week"
+                    : hasBaseline
+                      ? formatPercent(row.vsBaseline)
+                      : "n/a"}
                 </TableCell>
               </TableRow>
             ))}

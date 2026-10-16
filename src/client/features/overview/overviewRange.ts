@@ -1,6 +1,7 @@
 import {
   addDays,
   daysBetween,
+  PRE_LAUNCH_WEEKS,
   type DateSpan,
 } from "@/client/features/traffic/trafficMath";
 import type { OverviewCompare, OverviewRange } from "@/types/schemas/overview";
@@ -8,8 +9,6 @@ import type { OverviewCompare, OverviewRange } from "@/types/schemas/overview";
 /** Search Console trails by about three days; GA4 trails less. One shared end
  *  date keeps both sources on the same window. */
 const DATA_LAG_DAYS = 3;
-/** The pre-launch reference window: the 12 weeks before launch. */
-const PRE_LAUNCH_WEEKS = 12;
 /** Search Console keeps about 16 months; used for the "seen before launch"
  *  lookback. */
 const PRE_LAUNCH_LOOKBACK_DAYS = 480;
@@ -140,6 +139,31 @@ export function resolveCompare(input: {
       };
     }
   }
+}
+
+export type LaunchComparison = {
+  /** Launch day through the latest data day. */
+  current: DateSpan;
+  /** The 12 weeks before launch, with the scale that brings its additive
+   *  totals to the same number of days as `current`. */
+  reference: CompareWindow;
+};
+
+/** The since-launch vs 12-weeks-before comparison the Overview opens on.
+ *  Null until the latest data day reaches the launch date. Every tab that
+ *  tells the launch story goes through here so the dates never drift. */
+export function launchComparison(
+  launch: string,
+  asOf: string,
+): LaunchComparison | null {
+  const current = resolveWindow({ range: "since_launch", asOf, launch });
+  if (!current) return null;
+  const reference = resolveCompare({
+    compare: "pre_launch_avg",
+    current,
+    launch,
+  });
+  return reference ? { current, reference } : null;
 }
 
 /** The "seen before launch" lookback used for the New since launch tab. */

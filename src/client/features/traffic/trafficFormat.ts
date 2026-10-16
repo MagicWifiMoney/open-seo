@@ -12,6 +12,7 @@ export const RANGE_LABELS: Record<TrafficRange, string> = {
   last_12_months: "Last 12 months",
   since_launch: "Since launch",
   pre_launch: "Pre-launch only",
+  launch_window: "12 weeks before launch to now",
   all: "All available",
   custom: "Custom range",
 };
@@ -98,6 +99,14 @@ export function formatBucketLabel(
   });
   return g === "week" ? `Wk of ${text}` : text;
 }
+
+/** Top-of-page note that replaces the Key events card. */
+export const KEY_EVENT_TRACKING_NOTE =
+  "Key event tracking changed, so counts before and after launch are not comparable.";
+
+/** Tooltip and table flag for the week that holds the launch date. */
+export const LAUNCH_WEEK_NOTE =
+  "Partly old site: this week holds days from before launch, so it is not a before or after reading.";
 
 /** Shown wherever key events would otherwise be compared across the launch. */
 export const KEY_EVENTS_NOT_COMPARABLE =

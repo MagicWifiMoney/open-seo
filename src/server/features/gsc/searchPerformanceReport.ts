@@ -1,5 +1,10 @@
 import { sort } from "remeda";
+import { launchComparison } from "@/client/features/overview/overviewRange";
+import { resolveDateRange } from "@/server/features/gsc/searchAnalytics";
 import type { GscSearchAnalyticsRow } from "@/server/lib/gscClient";
+import { BRAND_TERMS, isBrandQuery } from "@/shared/brandQueries";
+import type { SearchPerformanceDateRange } from "@/types/schemas/search-performance";
+import { SITE_LAUNCH_DATE } from "@/types/schemas/traffic";
 
 /**
  * Pure shaping helpers for the Search Performance page. Kept separate from the
@@ -142,4 +147,161 @@ export function previousPeriod(
 
 function formatUtcDate(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
+}
+
+export type SearchWindows = {
+  startDate: string;
+  endDate: string;
+  prevStartDate: string;
+  prevEndDate: string;
+  /** Multiplier for the reference window's additive totals (clicks,
+   *  impressions) so it reads per the same number of days as the current
+   *  window. 1 for a plain previous period. */
+  scale: number;
+  /** "launch" when the reference is the 12 weeks before launch. */
+  baseline: "launch" | "previous";
+};
+
+/** Current and reference windows for a Search Performance range.
+ *
+ *  `since_launch` runs from the launch date to the latest data day and is
+ *  compared with the 12 weeks before launch, scaled to the same number of days
+ *  (the Overview's comparison, via launchComparison). Every other range is
+ *  compared with the same-length period just before it. If the launch date is
+ *  not reached yet, `since_launch` falls back to the last 28 days. */
+export function resolveSearchWindows(
+  dateRange: SearchPerformanceDateRange,
+  today: Date = new Date(),
+  launch: string = SITE_LAUNCH_DATE,
+): SearchWindows {
+  if (dateRange === "since_launch") {
+    const { endDate: latest } = resolveDateRange(
+      { dateRange: "last_7_days" },
+      today,
+    );
+    const pair = launchComparison(launch, latest);
+    if (pair) {
+      return {
+        startDate: pair.current.start,
+        endDate: pair.current.end,
+        prevStartDate: pair.reference.start,
+        prevEndDate: pair.reference.end,
+        scale: pair.reference.scale,
+        baseline: "launch",
+      };
+    }
+  }
+  const { startDate, endDate } = resolveDateRange(
+    {
+      dateRange: dateRange === "since_launch" ? "last_28_days" : dateRange,
+    },
+    today,
+  );
+  const prev = previousPeriod(startDate, endDate);
+  return {
+    startDate,
+    endDate,
+    prevStartDate: prev.startDate,
+    prevEndDate: prev.endDate,
+    scale: 1,
+    baseline: "previous",
+  };
+}
+
+/** Bring a reference window's totals to the current window's length. Clicks
+ *  and impressions are additive so they scale; CTR and position are ratios
+ *  and stay as they are. */
+export function scaleTotals(
+  totals: SearchPerformanceTotals,
+  scale: number,
+): SearchPerformanceTotals {
+  return {
+    ...totals,
+    clicks: totals.clicks * scale,
+    impressions: totals.impressions * scale,
+  };
+}
+
+export type MoverRow = {
+  query: string;
+  isBrand: boolean;
+  clicks: number;
+  /** Reference-window clicks, already scaled to the current window length. */
+  prevClicks: number;
+  clickChange: number;
+  impressions: number;
+  /** Null when the query had no impressions in the window. */
+  position: number | null;
+  prevPosition: number | null;
+  /** Previous minus current, so positive means the query moved up. Null when
+   *  the query is missing from either window. */
+  positionChange: number | null;
+};
+
+const MOVERS_ROW_LIMIT = 100;
+
+/** Queries whose clicks or position changed most between the reference and
+ *  current windows. Ranked by absolute click change, then absolute position
+ *  change, then impressions. Queries that did not move at all are dropped.
+ *  GSC returns each window's top queries only, so a query outside the top rows
+ *  of the reference window can read as new. */
+export function buildMovers(
+  current: GscSearchAnalyticsRow[],
+  previous: GscSearchAnalyticsRow[],
+  scale: number,
+  terms: readonly string[] = BRAND_TERMS,
+  limit: number = MOVERS_ROW_LIMIT,
+): MoverRow[] {
+  const prevByQuery = new Map<string, GscSearchAnalyticsRow>();
+  for (const row of previous) {
+    const query = row.keys?.[0];
+    if (query) prevByQuery.set(query, row);
+  }
+  const seen = new Set<string>();
+  const rows: MoverRow[] = [];
+  const push = (
+    query: string,
+    now: GscSearchAnalyticsRow | undefined,
+    before: GscSearchAnalyticsRow | undefined,
+  ) => {
+    const clicks = now?.clicks ?? 0;
+    const prevClicks = (before?.clicks ?? 0) * scale;
+    const position = now && now.impressions > 0 ? now.position : null;
+    const prevPosition =
+      before && before.impressions > 0 ? before.position : null;
+    const positionChange =
+      position !== null && prevPosition !== null
+        ? prevPosition - position
+        : null;
+    const clickChange = clicks - prevClicks;
+    if (clickChange === 0 && (positionChange === null || positionChange === 0))
+      return;
+    rows.push({
+      query,
+      isBrand: isBrandQuery(query, terms),
+      clicks,
+      prevClicks,
+      clickChange,
+      impressions: now?.impressions ?? 0,
+      position,
+      prevPosition,
+      positionChange,
+    });
+  };
+  for (const row of current) {
+    const query = row.keys?.[0];
+    if (!query) continue;
+    seen.add(query);
+    push(query, row, prevByQuery.get(query));
+  }
+  for (const [query, row] of prevByQuery) {
+    if (!seen.has(query)) push(query, undefined, row);
+  }
+  return sort(
+    rows,
+    (a, b) =>
+      Math.abs(b.clickChange) - Math.abs(a.clickChange) ||
+      Math.abs(b.positionChange ?? 0) - Math.abs(a.positionChange ?? 0) ||
+      b.impressions - a.impressions,
+  ).slice(0, limit);
 }
