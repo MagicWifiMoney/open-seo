@@ -105,6 +105,7 @@ type Args = z.infer<z.ZodObject<typeof inputSchema>>;
 
 export const getSerpResultsTool = {
   name: "get_serp_results",
+  spend: true,
   config: {
     title: "Get Google SERP results",
     description:

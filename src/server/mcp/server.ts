@@ -19,7 +19,9 @@ import {
   McpServer,
   type ToolAnnotations,
 } from "@modelcontextprotocol/server";
+import { env } from "cloudflare:workers";
 import type { z } from "zod";
+import { withSpendGate } from "@/server/mcp/spend-gate";
 import {
   createMcpToolContext,
   type McpProps,
@@ -128,6 +130,9 @@ type ToolArgs<Input extends ToolSchema> = Input extends z.ZodType
 
 type OpenSeoToolDefinition<Input extends ToolSchema> = {
   name: string;
+  // Triggers paid work (DataForSEO, audits, AI runs). Refused for roles
+  // without research:spend, e.g. the read-only `client` role.
+  spend?: boolean;
   config: {
     title?: string;
     description?: string;
@@ -153,7 +158,7 @@ function registerOpenSeoTool<Input extends ToolSchema>(
   const handler = instrumentMcpToolHandler(
     tool.name,
     outputSchema,
-    tool.handler,
+    withSpendGate(tool.spend, tool.handler),
   );
 
   server.registerTool(
@@ -167,7 +172,7 @@ function registerOpenSeoTool<Input extends ToolSchema>(
       return handler(
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- args were validated against the tool's own inputSchema just above
         args as ToolArgs<Input>,
-        createMcpToolContext(context, authProps),
+        createMcpToolContext(context, authProps, env),
       );
     },
   );

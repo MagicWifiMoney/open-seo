@@ -218,6 +218,7 @@ function formatProfileText(profile: Record<string, unknown>): string {
 
 export const getBusinessProfileTool = {
   name: "get_business_profile",
+  spend: true,
   config: {
     title: "Get business profile",
     description:
@@ -367,6 +368,7 @@ const REVIEW_COLUMNS: McpTableColumn<unknown>[] = [
 
 export const getBusinessReviewsTool = {
   name: "get_business_reviews",
+  spend: true,
   config: {
     title: "Get business reviews",
     description:
@@ -523,6 +525,7 @@ const BUSINESS_UPDATE_COLUMNS: McpTableColumn<unknown>[] = [
 
 export const getBusinessUpdatesTool = {
   name: "get_business_updates",
+  spend: true,
   config: {
     title: "Get business updates",
     description:
@@ -952,6 +955,7 @@ function formatMatchedBusiness(business: MatchedBusiness | null): string {
 
 export const getLocalRankGridTool = {
   name: "get_local_rank_grid",
+  spend: true,
   config: {
     title: "Get local rank grid",
     description:

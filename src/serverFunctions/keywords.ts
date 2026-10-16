@@ -14,6 +14,7 @@ import {
 import { KeywordResearchService } from "@/server/features/keywords/services/KeywordResearchService";
 import { requireProjectContext } from "@/serverFunctions/middleware";
 import { resolveMarket } from "@/shared/keyword-locations";
+import { requireSpend } from "@/server/auth/org-gate";
 
 function shouldUseKeywordE2eFixtures() {
   return import.meta.env.VITE_E2E_KEYWORD_FIXTURES === "1";
@@ -27,6 +28,7 @@ export const researchKeywords = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(researchKeywordsSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     const input = {
       ...data,
       ...resolveMarket(data, context.project),
@@ -114,6 +116,7 @@ export const refreshSavedKeywordMetrics = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(refreshSavedKeywordMetricsSchema)
   .handler(async ({ context }) => {
+    requireSpend(context);
     return KeywordResearchService.refreshSavedKeywordMetrics(
       { projectId: context.projectId },
       context,
@@ -123,13 +126,14 @@ export const refreshSavedKeywordMetrics = createServerFn({ method: "POST" })
 export const getSerpAnalysis = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(serpAnalysisSchema)
-  .handler(async ({ data, context }) =>
-    KeywordResearchService.getSerpAnalysis(
+  .handler(async ({ data, context }) => {
+    requireSpend(context);
+    return KeywordResearchService.getSerpAnalysis(
       {
         ...data,
         ...resolveMarket(data, context.project),
         projectId: context.projectId,
       },
       context,
-    ),
-  );
+    );
+  });

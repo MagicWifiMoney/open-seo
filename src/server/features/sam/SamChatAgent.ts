@@ -42,9 +42,8 @@ import {
   trackUsageCreditSpend,
 } from "@/server/billing/subscription";
 import { getPublicOrigin } from "@/server/mcp/public-origin";
-import { MCP_SCOPE } from "@/lib/oauth-resource";
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
-import type { ToolAuthContext } from "@/server/mcp/context";
+import { buildSamAuthContext } from "./samAuth";
 
 // SAM's read-only view of the project's shared memory. The block has no `set`
 // provider, so Think exposes no set_context tool for it; writes go through the
@@ -365,18 +364,12 @@ export class SamChatAgent extends Think {
           "You no longer have access to this organization, so I can't continue this chat.",
         );
       }
-      const authContext: ToolAuthContext = {
-        userId: ctx.row.userId,
-        userEmail: ctx.userEmail,
-        organizationId,
-        role: membership?.role ?? "owner",
-        // SAM sessions belong to one project's workspace; org context is
-        // fixed for the session, like an OAuth token's.
-        orgScope: "pinned",
+      const authContext = buildSamAuthContext(
+        ctx,
+        membership?.role,
         baseUrl,
-        clientId: null,
-        scopes: [MCP_SCOPE],
-      };
+        this.env,
+      );
 
       // Loaded per turn, not at startup: the tool schemas are costly to build.
       const samTools = await import("@/server/features/sam/samChatTools");

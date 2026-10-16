@@ -79,6 +79,7 @@ function optionalMetric(label: string, value: unknown) {
 
 export const getBacklinksOverviewTool = {
   name: "get_backlinks_overview",
+  spend: true,
   config: {
     title: "Get backlinks overview",
     description:

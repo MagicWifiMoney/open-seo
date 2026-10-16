@@ -14,6 +14,7 @@ import {
 
 export const researchProjectWebsiteTool = {
   name: "research_project_website",
+  spend: true,
   config: {
     title: "Research project website",
     description:

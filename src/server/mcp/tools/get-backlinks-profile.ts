@@ -122,6 +122,7 @@ const BACKLINK_COLUMNS: McpTableColumn<BacklinkRow>[] = [
 
 export const getBacklinksProfileTool = {
   name: "get_backlinks_profile",
+  spend: true,
   config: {
     title: "Get backlinks profile",
     description:

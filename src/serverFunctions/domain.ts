@@ -8,6 +8,7 @@ import {
 } from "@/types/schemas/domain";
 import { DomainService } from "@/server/features/domain/services/DomainService";
 import { resolveLabsMarket } from "@/shared/keyword-locations";
+import { requireSpend } from "@/server/auth/org-gate";
 
 function shouldUseDomainE2eFixtures() {
   return import.meta.env.VITE_E2E_DOMAIN_FIXTURES === "1";
@@ -21,6 +22,7 @@ export const getDomainOverview = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(domainOverviewSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     const input = {
       ...data,
       ...resolveLabsMarket(data, context.project),
@@ -37,8 +39,9 @@ export const getDomainOverview = createServerFn({ method: "POST" })
 export const getDomainKeywordSuggestions = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(domainKeywordSuggestionsSchema)
-  .handler(async ({ data, context }) =>
-    DomainService.getSuggestedKeywords(
+  .handler(async ({ data, context }) => {
+    requireSpend(context);
+    return DomainService.getSuggestedKeywords(
       {
         ...data,
         ...resolveLabsMarket(data, context.project),
@@ -46,13 +49,14 @@ export const getDomainKeywordSuggestions = createServerFn({ method: "POST" })
         projectId: context.projectId,
       },
       context,
-    ),
-  );
+    );
+  });
 
 export const getDomainKeywordsPage = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(domainKeywordsPageRequestSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     const input = {
       ...data,
       ...resolveLabsMarket(data, context.project),
@@ -70,6 +74,7 @@ export const getDomainPagesPage = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(domainPagesPageRequestSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     const input = {
       ...data,
       ...resolveLabsMarket(data, context.project),

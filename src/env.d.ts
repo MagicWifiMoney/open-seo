@@ -31,6 +31,10 @@ declare namespace Cloudflare {
     AUTH_MODE?: "cloudflare_access" | "local_noauth" | "hosted";
     MILLER_HUB_FEED_ENABLED?: string;
     METRICS_INGEST_ENABLED?: string;
+    // Comma-separated email domains / emails that get the read-only `client`
+    // role in cloudflare_access mode (everyone else admitted is an owner).
+    ACCESS_CLIENT_DOMAINS?: string;
+    ACCESS_CLIENT_EMAILS?: string;
     MILLER_HUB_TRACKER_ID?: string;
     BYPASS_EMAIL_VERIFICATION?: string;
     TEAM_DOMAIN?: string;

@@ -85,6 +85,7 @@ import { explorePromptTool } from "@/server/mcp/tools/explore-prompt";
 import { discoverSiteUrls, readPages, readSite } from "@/server/lib/scrape";
 import { capToolOutput } from "@/server/features/sam/samToolOutput";
 import openSeoFactSheet from "@/server/features/sam/openseo-fact-sheet.md?raw";
+import { withSpendGate } from "@/server/mcp/spend-gate";
 
 // Enough pages for SAM to work out what a business does, sells, and positions
 // against on its own.
@@ -96,6 +97,7 @@ const SAM_MAX_MAPPED_URLS = 60;
 // the MCP server can never drift in what a tool does or how it bills.
 type McpToolDefinition<Shape extends ZodRawShape> = {
   name: string;
+  spend?: boolean;
   config: { description: string; inputSchema: Shape };
   handler: (
     args: z.infer<z.ZodObject<Shape>>,
@@ -151,7 +153,11 @@ function adaptMcpTool<Shape extends ZodRawShape>(
 ): Tool {
   const { projectId: _projectIdSchema, ...modelShape } = def.config.inputSchema;
   const bindsProject = "projectId" in def.config.inputSchema;
-  const handler = instrumentMcpToolHandler(def.name, undefined, def.handler);
+  const handler = instrumentMcpToolHandler(
+    def.name,
+    undefined,
+    withSpendGate(def.spend, def.handler),
+  );
 
   return tool({
     description: def.config.description,
@@ -350,6 +356,7 @@ export function buildSamMcpTools(
   type AnyMcpHandler = McpToolDefinition<ZodRawShape>["handler"];
   const adaptObjectTool = (definition: {
     name: string;
+    spend?: boolean;
     config: { description: string; inputSchema: { shape: ZodRawShape } };
     handler: (args: never, context: ToolContext) => Promise<CallToolResult>;
   }) => {
@@ -358,6 +365,7 @@ export function buildSamMcpTools(
     return adaptMcpTool(
       {
         name: definition.name,
+        spend: definition.spend,
         config: {
           description: definition.config.description,
           inputSchema: definition.config.inputSchema.shape,

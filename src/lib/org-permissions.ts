@@ -19,6 +19,9 @@ const statement = {
   project: ["create", "delete"],
   // GSC/GA4 connect, re-point, disconnect.
   integration: ["manage"],
+  // Anything that spends paid credits: DataForSEO, site audits, AI visibility
+  // runs, OpenRouter research. The `client` role deliberately lacks it.
+  research: ["spend"],
 } as const;
 
 export const orgAccessControl = createAccessControl(statement);
@@ -29,16 +32,24 @@ export const orgRoles = {
     billing: ["manage"],
     project: ["create", "delete"],
     integration: ["manage"],
+    research: ["spend"],
   }),
   admin: orgAccessControl.newRole({
     ...adminAc.statements,
     project: ["create", "delete"],
     integration: ["manage"],
+    research: ["spend"],
   }),
   // Defined from day one so exposing it later is UI-only; not offered in the
   // invite picker yet. Members can view everything and run research, but not
   // manage the org, billing, projects, or integrations.
   member: orgAccessControl.newRole({
+    ...memberAc.statements,
+    research: ["spend"],
+  }),
+  // Read-only client seat: reads every data surface and can save keywords, but
+  // never triggers paid work. No billing, project, integration or research.
+  client: orgAccessControl.newRole({
     ...memberAc.statements,
   }),
 };
@@ -62,4 +73,8 @@ export function hasOrgPermission(
     const candidate = roleByName.get(name.trim());
     return candidate ? candidate.authorize(permissions).success : false;
   });
+}
+
+export function canSpend(role: string): boolean {
+  return hasOrgPermission(role, { research: ["spend"] });
 }

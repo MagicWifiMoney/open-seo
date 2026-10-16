@@ -5,13 +5,19 @@ import {
   researchProjectWebsiteSchema,
   saveProjectWebsiteSetupSchema,
 } from "@/types/schemas/projectWebsite";
+import { requireSpend } from "@/server/auth/org-gate";
 
 export const researchProjectWebsite = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(researchProjectWebsiteSchema)
-  .handler(({ data, context }) =>
-    ProjectWebsiteService.research(context.projectId, data.website, context),
-  );
+  .handler(({ data, context }) => {
+    requireSpend(context);
+    return ProjectWebsiteService.research(
+      context.projectId,
+      data.website,
+      context,
+    );
+  });
 export const saveProjectWebsiteSetup = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(saveProjectWebsiteSetupSchema)

@@ -7,6 +7,7 @@ import {
   referringDomainsPageRequestSchema,
   topPagesPageRequestSchema,
 } from "@/types/schemas/backlinks";
+import { requireSpend } from "@/server/auth/org-gate";
 
 // Referring-domain scores aggregate multiple links and retain their own filters.
 const WEB_SPAM_OPTIONS = { hideSpam: false };
@@ -17,6 +18,7 @@ export const getBacklinksOverview = createServerFn({
   .middleware(requireProjectContext)
   .validator(backlinksOverviewInputSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     const profile = await BacklinksService.profileOverview(
       {
         target: data.target,
@@ -32,30 +34,33 @@ export const getBacklinksRows = createServerFn({
 })
   .middleware(requireProjectContext)
   .validator(backlinksRowsPageRequestSchema)
-  .handler(({ data, context }) =>
-    BacklinksService.profileBacklinksPage(data, context, {
+  .handler(({ data, context }) => {
+    requireSpend(context);
+    return BacklinksService.profileBacklinksPage(data, context, {
       hideSpam: data.hideSpam ?? true,
-    }),
-  );
+    });
+  });
 
 export const getBacklinksReferringDomains = createServerFn({
   method: "POST",
 })
   .middleware(requireProjectContext)
   .validator(referringDomainsPageRequestSchema)
-  .handler(({ data, context }) =>
-    BacklinksService.profileReferringDomainsPage(
+  .handler(({ data, context }) => {
+    requireSpend(context);
+    return BacklinksService.profileReferringDomainsPage(
       data,
       context,
       WEB_SPAM_OPTIONS,
-    ),
-  );
+    );
+  });
 
 export const getBacklinksTopPages = createServerFn({
   method: "POST",
 })
   .middleware(requireProjectContext)
   .validator(topPagesPageRequestSchema)
-  .handler(({ data, context }) =>
-    BacklinksService.profileTopPagesPage(data, context),
-  );
+  .handler(({ data, context }) => {
+    requireSpend(context);
+    return BacklinksService.profileTopPagesPage(data, context);
+  });

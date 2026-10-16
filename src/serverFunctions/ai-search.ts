@@ -7,11 +7,13 @@ import {
   brandLookupInputSchema,
   promptExplorerInputSchema,
 } from "@/types/schemas/ai-search";
+import { requireSpend } from "@/server/auth/org-gate";
 
 export const lookupBrand = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(brandLookupInputSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     await assertPaidAiSearchPlan(context.organizationId, "Brand Lookup");
     return getBrandLookup({ ...data, projectId: context.projectId }, context);
   });
@@ -20,5 +22,6 @@ export const explorePrompt = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(promptExplorerInputSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     return runExplorePrompt({ ...data, projectId: context.projectId }, context);
   });

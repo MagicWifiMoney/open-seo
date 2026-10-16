@@ -13,11 +13,13 @@ import {
   getCrawlProgressSchema,
   startAuditSchema,
 } from "@/types/schemas/audit";
+import { requireSpend } from "@/server/auth/org-gate";
 
 export const startAudit = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(startAuditSchema)
   .handler(async ({ data, context }) => {
+    requireSpend(context);
     const limitTier = await AuditService.resolveAuditLimitTier(context);
 
     const result = await AuditService.startAudit({

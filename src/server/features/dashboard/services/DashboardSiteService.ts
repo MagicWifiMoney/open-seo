@@ -39,6 +39,7 @@ const queriesSchema = z.object({
 async function getBacklinks(
   input: { domain: string; kind: "new" | "lost" | "all" },
   billingCustomer: BillingCustomerContext,
+  options: { cacheOnly?: boolean } = {},
 ) {
   const result = await DashboardCacheService.readThrough({
     namespace: "dashboard:links",
@@ -46,6 +47,7 @@ async function getBacklinks(
     params: input,
     schema: z.array(backlinksItemSchema),
     maxAgeMs: 86400_000,
+    cacheOnly: options.cacheOnly ? { empty: [] } : undefined,
     load: async () => {
       const target = normalizeBacklinksTarget(input.domain, {
         scope: "subdomains",
@@ -335,6 +337,7 @@ async function getEmergingQueries(projectId: string, organizationId: string) {
 async function getLinkActivity(
   domain: string,
   billingCustomer: BillingCustomerContext,
+  options: { cacheOnly?: boolean } = {},
 ) {
   const target = normalizeBacklinksTarget(domain, {
     scope: "subdomains",
@@ -345,6 +348,7 @@ async function getLinkActivity(
     params: { target },
     schema: z.array(referringDomainItemSchema),
     maxAgeMs: 86400_000,
+    cacheOnly: options.cacheOnly ? { empty: [] } : undefined,
     load: async () => {
       const from = new Date(Date.now() - 7 * 86400_000)
         .toISOString()
@@ -374,7 +378,11 @@ async function getLinkActivity(
       kind: "domains" as const,
       links: [],
     };
-  const links = await getBacklinks({ domain, kind: "new" }, billingCustomer);
+  const links = await getBacklinks(
+    { domain, kind: "new" },
+    billingCustomer,
+    options,
+  );
   return { ...links, value: [], kind: "links" as const, links: links.value };
 }
 

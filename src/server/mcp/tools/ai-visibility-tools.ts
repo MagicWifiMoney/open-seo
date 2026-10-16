@@ -61,6 +61,7 @@ function defineAiTool<
   Output extends z.ZodType,
 >(options: {
   name: string;
+  spend?: boolean;
   title: string;
   description: string;
   input: z.ZodObject<Shape>;
@@ -80,6 +81,7 @@ function defineAiTool<
 }) {
   return {
     name: options.name,
+    spend: options.spend,
     config: {
       title: options.title,
       description: options.description,
@@ -144,6 +146,7 @@ function defineAiTool<
 
 export const generateAiVisibilityPromptsTool = defineAiTool({
   name: "generate_ai_visibility_prompts",
+  spend: true,
   title: "Generate AI tracking prompts",
   input: generateAiPromptsSchema,
   output: aiPromptSuggestionsSchema,
@@ -157,6 +160,7 @@ export const generateAiVisibilityPromptsTool = defineAiTool({
 
 export const completeAiResearchSetupTool = defineAiTool({
   name: "complete_ai_research_setup",
+  spend: true,
   title: "Complete AI research setup",
   input: aiProjectSchema,
   output: z.looseObject({
@@ -179,6 +183,7 @@ export const completeAiResearchSetupTool = defineAiTool({
 
 export const researchAiVisibilityPromptsTool = defineAiTool({
   name: "research_ai_visibility_prompts",
+  spend: true,
   title: "Research AI prompts",
   input: researchAiPromptsSchema,
   output: aiPromptResearchOutput,
@@ -237,6 +242,7 @@ export const estimateAiVisibilityCostTool = defineAiTool({
 });
 export const setAiVisibilityScheduleTool = defineAiTool({
   name: "set_ai_visibility_schedule",
+  spend: true,
   title: "Set AI visibility schedule",
   input: setAiScheduleSchema,
   output: z.looseObject({
@@ -252,6 +258,7 @@ export const setAiVisibilityScheduleTool = defineAiTool({
 });
 export const runAiVisibilityCheckTool = defineAiTool({
   name: "run_ai_visibility_check",
+  spend: true,
   title: "Run AI visibility check",
   input: runAiCheckSchema,
   output: aiRunOutput,

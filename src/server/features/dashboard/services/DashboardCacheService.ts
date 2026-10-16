@@ -12,6 +12,9 @@ async function readThrough<T>(input: {
   schema: z.ZodType<T>;
   maxAgeMs: number;
   load: () => Promise<T>;
+  // Roles that cannot spend never call `load` (it bills the provider). They
+  // get the last cached value at any age, or `empty` when nothing is cached.
+  cacheOnly?: { empty: T };
 }) {
   const key = await buildCacheKey(input.namespace, {
     ...input.params,
@@ -20,6 +23,18 @@ async function readThrough<T>(input: {
   const schema = z.object({ value: input.schema, fetchedAt: z.string() });
   const parsed = schema.safeParse(await getCached(key));
   const cached = parsed.success ? parsed.data : null;
+  if (input.cacheOnly) {
+    if (cached) {
+      const fresh = Date.now() - Date.parse(cached.fetchedAt) < input.maxAgeMs;
+      return { ...cached, stale: !fresh, refreshError: null };
+    }
+    return {
+      value: input.cacheOnly.empty,
+      fetchedAt: new Date().toISOString(),
+      stale: false,
+      refreshError: null,
+    };
+  }
   if (cached && Date.now() - Date.parse(cached.fetchedAt) < input.maxAgeMs) {
     return { ...cached, stale: false, refreshError: null };
   }

@@ -113,6 +113,7 @@ const RESEARCH_COLUMNS: McpTableColumn<ResearchRow>[] = [
 
 export const researchKeywordsTool = {
   name: "research_keywords",
+  spend: true,
   config: {
     title: "Research keywords (bulk)",
     description:

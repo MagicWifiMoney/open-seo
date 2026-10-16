@@ -59,6 +59,7 @@ type Args = z.infer<z.ZodObject<typeof inputSchema>>;
 
 export const getDomainKeywordSuggestionsTool = {
   name: "get_domain_keyword_suggestions",
+  spend: true,
   config: {
     title: "Get domain keyword opportunities",
     description:
