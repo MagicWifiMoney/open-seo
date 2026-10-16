@@ -17,7 +17,11 @@ export default defineConfig(({ mode, command }) => {
       plugins: [tsConfigPaths()],
       test: {
         environment: "node",
-        include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
+        include: [
+          "src/**/*.test.ts",
+          "scripts/**/*.test.ts",
+          "deploy/**/*.test.ts",
+        ],
         restoreMocks: true,
         clearMocks: true,
         server: {
