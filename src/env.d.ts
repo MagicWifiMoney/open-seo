@@ -30,6 +30,7 @@ declare namespace Cloudflare {
 
     AUTH_MODE?: "cloudflare_access" | "local_noauth" | "hosted";
     MILLER_HUB_FEED_ENABLED?: string;
+    METRICS_INGEST_ENABLED?: string;
     MILLER_HUB_TRACKER_ID?: string;
     BYPASS_EMAIL_VERIFICATION?: string;
     TEAM_DOMAIN?: string;

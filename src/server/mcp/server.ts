@@ -94,6 +94,11 @@ import {
 import { researchKeywordsTool } from "@/server/mcp/tools/research-keywords";
 import { saveKeywordsTool } from "@/server/mcp/tools/save-keywords";
 import {
+  getGa4DailyHistoryTool,
+  getGscDailyHistoryTool,
+  getMetricsHistoryStatusTool,
+} from "@/server/mcp/tools/metrics-history-tools";
+import {
   getSearchConsolePerformanceTool,
   inspectUrlsTool,
 } from "@/server/mcp/tools/search-console-tools";
@@ -244,6 +249,9 @@ export function createOpenSeoMcpServer(authProps: McpProps) {
   register(getKeywordMetricsTool);
   register(getSearchConsolePerformanceTool);
   register(inspectUrlsTool);
+  register(getMetricsHistoryStatusTool);
+  register(getGscDailyHistoryTool);
+  register(getGa4DailyHistoryTool);
   register(getGoogleAnalyticsOrganicLandingPagesTool);
   register(getGoogleAnalyticsPagePerformanceTool);
   register(getGoogleAnalyticsKeyEventsTool);

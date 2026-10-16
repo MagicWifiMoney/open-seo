@@ -407,6 +407,13 @@
       "when": 1792092983962,
       "tag": "0057_ambitious_lethal_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "6",
+      "when": 1792156221309,
+      "tag": "0058_demonic_rockslide",
+      "breakpoints": true
     }
   ]
 }

@@ -202,6 +202,10 @@ export { SamChatAgent } from "./server/features/sam/SamChatAgent";
 
 // Daily OAuth KV garbage collection; must match a trigger in wrangler.jsonc.
 const MCP_OAUTH_PURGE_CRON = "17 3 * * *";
+// Half-hourly GSC/GA4 daily-row ingest; must match a trigger in wrangler.jsonc.
+// Crons are shared by every stage, so the body is a no-op unless the stage
+// sets METRICS_INGEST_ENABLED=true (alchemy optional var).
+const METRICS_INGEST_CRON = "7,37 * * * *";
 
 export default {
   fetch,
@@ -210,6 +214,13 @@ export default {
     env: Env,
     _ctx: ExecutionContext,
   ) {
+    if (controller.cron === METRICS_INGEST_CRON) {
+      if (env.METRICS_INGEST_ENABLED !== "true") return;
+      const { runScheduledMetricsIngest } =
+        await import("@/server/features/metrics-history/scheduledMetricsIngest");
+      await withPgClient(() => runScheduledMetricsIngest());
+      return;
+    }
     if (controller.cron === MCP_OAUTH_PURGE_CRON) {
       // Only hosted mode runs the OAuth provider (and has OAUTH_KV bound).
       if (isHostedAuthMode(getAuthMode(env.AUTH_MODE))) {

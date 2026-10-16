@@ -72,6 +72,11 @@ import {
 import { researchKeywordsTool } from "@/server/mcp/tools/research-keywords";
 import { saveKeywordsTool } from "@/server/mcp/tools/save-keywords";
 import {
+  getGa4DailyHistoryTool,
+  getGscDailyHistoryTool,
+  getMetricsHistoryStatusTool,
+} from "@/server/mcp/tools/metrics-history-tools";
+import {
   getSearchConsolePerformanceTool,
   inspectUrlsTool,
 } from "@/server/mcp/tools/search-console-tools";
@@ -426,6 +431,9 @@ export function buildSamMcpTools(
     get_keyword_metrics: adaptTool(getKeywordMetricsTool),
     get_search_console_performance: adaptTool(getSearchConsolePerformanceTool),
     inspect_urls: adaptTool(inspectUrlsTool),
+    get_metrics_history_status: adaptTool(getMetricsHistoryStatusTool),
+    get_gsc_daily_history: adaptTool(getGscDailyHistoryTool),
+    get_ga4_daily_history: adaptTool(getGa4DailyHistoryTool),
     // Unconditional like the MCP server's registrations — the GA4 launch gate
     // was removed in #505.
     get_google_analytics_organic_landing_pages: adaptObjectTool(
