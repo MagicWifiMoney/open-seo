@@ -25,6 +25,7 @@ import {
   getPositionMatrixSchema,
   getCompetitorMatrixSchema,
 } from "@/types/schemas/rank-tracking";
+import { assertClientKeywordBudget } from "@/server/features/rank-tracking/services/clientKeywordCap";
 import { requireSpend } from "@/server/auth/org-gate";
 import { canSpend } from "@/lib/org-permissions";
 
@@ -82,6 +83,7 @@ export const createRankTrackingConfig = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(createConfigSchema)
   .handler(async ({ data, context }) => {
+    const spendSkipped = !canSpend(context.role);
     const result = await RankTrackingService.createConfig({
       projectId: context.projectId,
       projectMarket: context.project,
@@ -92,15 +94,14 @@ export const createRankTrackingConfig = createServerFn({ method: "POST" })
       devices: data.devices,
       serpDepth: data.serpDepth,
       trackCompetitors: data.trackCompetitors,
-      scheduleInterval: data.scheduleInterval,
-      scheduleTime: data.scheduleTime,
+      // Clients cannot create recurring spend: manual, whatever they sent.
+      scheduleInterval: spendSkipped ? "manual" : data.scheduleInterval,
+      scheduleTime: spendSkipped ? undefined : data.scheduleTime,
     });
 
     // Re-adding an archived domain keeps its keywords, and the keyword step
     // then adds nothing new — so this is the only place its check can start.
-    // Clients persist the config but never start paid work; the owner's
-    // scheduled run picks it up.
-    const spendSkipped = !canSpend(context.role);
+    // Clients persist the config but never start paid work.
     if (!spendSkipped) {
       await runAutoCheck({
         configId: result.id,
@@ -231,6 +232,16 @@ export const addTrackingKeywords = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(addKeywordsSchema)
   .handler(async ({ data, context }) => {
+    const spendSkipped = !canSpend(context.role);
+    if (spendSkipped) {
+      assertClientKeywordBudget({
+        existing: await RankTrackingRepository.getKeywordsForConfig(
+          data.configId,
+        ),
+        incoming: data.keywords,
+        matchCase: data.matchCase,
+      });
+    }
     const result = await RankTrackingService.addKeywords(
       data.configId,
       context.projectId,
@@ -241,7 +252,6 @@ export const addTrackingKeywords = createServerFn({ method: "POST" })
 
     // Clients keep the keywords but never trigger the paid check or metrics
     // fetch; the next scheduled run covers them.
-    const spendSkipped = !canSpend(context.role);
     const autoCheck =
       result.addedIds.length > 0 && !spendSkipped
         ? await runAutoCheck({

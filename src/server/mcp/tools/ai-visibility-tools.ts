@@ -213,6 +213,7 @@ export const getAiVisibilityTrackerTool = defineAiTool({
 });
 export const saveAiVisibilityTrackerTool = defineAiTool({
   name: "save_ai_visibility_tracker",
+  spend: true,
   title: "Save AI visibility tracker",
   input: saveAiTrackerSchema,
   output: z.looseObject({

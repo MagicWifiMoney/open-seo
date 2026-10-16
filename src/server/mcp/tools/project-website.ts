@@ -57,6 +57,7 @@ export const researchProjectWebsiteTool = {
 };
 export const saveProjectWebsiteSetupTool = {
   name: "save_project_website_setup",
+  spend: true,
   config: {
     title: "Save reviewed website setup",
     description:

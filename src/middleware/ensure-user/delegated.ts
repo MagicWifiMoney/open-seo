@@ -95,8 +95,8 @@ export async function resolveSharedWorkspaceContext(
     emailVerified: true,
     organizationId,
     // The Access policy is the authorization boundary; everyone it admits has
-    // full control of the shared workspace, except listed client seats
-    // (ACCESS_CLIENT_DOMAINS / ACCESS_CLIENT_EMAILS) which cannot spend.
+    // full control of the shared workspace, unless ACCESS_OWNER_EMAILS is set,
+    // in which case everyone not listed is a read-only client.
     role: resolveAccessRole(ensuredEmail, env),
   };
 }

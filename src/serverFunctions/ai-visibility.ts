@@ -78,9 +78,13 @@ export const getAiVisibilityTracker = createServerFn({ method: "POST" })
 export const saveAiVisibilityTracker = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(saveAiTrackerSchema)
-  .handler(({ data, context }) =>
-    AiVisibilityService.saveTracker({ ...data, projectId: context.projectId }),
-  );
+  .handler(({ data, context }) => {
+    requireSpend(context);
+    return AiVisibilityService.saveTracker({
+      ...data,
+      projectId: context.projectId,
+    });
+  });
 
 export const estimateAiVisibilityCost = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)

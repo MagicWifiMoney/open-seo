@@ -391,7 +391,7 @@ function RankTrackingConfigModalContent({
                     ? "Save Changes"
                     : canSpend
                       ? "Add Domain"
-                      : "Create (checks run on schedule)"}
+                      : "Create (owner enables checks)"}
                 </form.SubmitButton>
               </DialogFooter>
             </form.Form>

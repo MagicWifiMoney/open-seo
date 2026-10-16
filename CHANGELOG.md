@@ -6,3 +6,4 @@
 2026-10-16 09:56 CDT [claude-code] metrics-history - Dashboard keywords, new queries and Traffic page read stored daily rows when coverage exists, live Google otherwise
 2026-10-16 16:10 CDT [claude-code] client-role - new read-only client org role (no research:spend), ACCESS_CLIENT_DOMAINS/EMAILS mapping, requireSpend on all paid server fns, spend flag on MCP and SAM tools, cache-only dashboard link cards
 2026-10-16 16:20 CDT [claude-code] client-role - SAM chat open to clients with spend tools refused; updateRankTrackingConfig gated; free serp-locations list ungated
+2026-10-16 17:00 CDT [claude-code] client-role - owner allowlist (ACCESS_OWNER_EMAILS) replaces client lists, SAM client daily turn cap, client keyword/schedule caps, saveAiVisibilityTracker and website setup gated, non-circular paid-path scan test

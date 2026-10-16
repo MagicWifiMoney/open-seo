@@ -18,14 +18,16 @@ export const researchProjectWebsite = createServerFn({ method: "POST" })
       context,
     );
   });
+// Gated: setup seeds a scheduled AI tracker and starts its first run.
 export const saveProjectWebsiteSetup = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(saveProjectWebsiteSetupSchema)
-  .handler(({ data, context }) =>
-    ProjectWebsiteService.save(
+  .handler(({ data, context }) => {
+    requireSpend(context);
+    return ProjectWebsiteService.save(
       { ...data, projectId: context.projectId },
       context,
       "user",
       { runSeededTracking: true },
-    ),
-  );
+    );
+  });

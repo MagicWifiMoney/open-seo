@@ -44,6 +44,7 @@ import {
 import { getPublicOrigin } from "@/server/mcp/public-origin";
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
 import { buildSamAuthContext } from "./samAuth";
+import { samClientTurnRefusal } from "./samTurnBudget";
 
 // SAM's read-only view of the project's shared memory. The block has no `set`
 // provider, so Think exposes no set_context tool for it; writes go through the
@@ -370,6 +371,9 @@ export class SamChatAgent extends Think {
         baseUrl,
         this.env,
       );
+
+      const capped = await samClientTurnRefusal(authContext, this.env, turn);
+      if (capped) return this.refusalTurn(capped);
 
       // Loaded per turn, not at startup: the tool schemas are costly to build.
       const samTools = await import("@/server/features/sam/samChatTools");

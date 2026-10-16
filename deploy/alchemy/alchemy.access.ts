@@ -63,6 +63,20 @@ export const accessIncludeRule = (entry: string) =>
     ? { emailDomain: { domain: entry.slice(1) } }
     : { email: { email: entry } };
 
+/**
+ * A domain-wide entry (`@domain.com`) admits people nobody listed by name, so
+ * the deploy must also say who the owners are; otherwise they would all be
+ * owners. Returns the failure message, or null when the config is safe.
+ */
+export const ownerListProblem = (
+  allowedEmails: string[],
+  ownerEmails: string,
+): string | null =>
+  allowedEmails.some((entry) => entry.startsWith("@")) &&
+  !ownerEmails.split(",").some((email) => email.trim())
+    ? "ACCESS_ALLOWED_EMAILS contains an @domain entry, so set ACCESS_OWNER_EMAILS to the comma-separated owner emails. Without it every admitted domain user would be an owner who can spend credits."
+    : null;
+
 /** The gate itself: an email allow-policy on a self-hosted Access application. */
 export const emailAccessGate = (options: {
   policyId: string;
