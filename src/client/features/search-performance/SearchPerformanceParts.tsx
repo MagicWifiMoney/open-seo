@@ -232,6 +232,28 @@ export function DimensionTable({
   );
 }
 
+/** Saves Search Console queries as tracked keywords and refreshes the list. */
+export function useSaveKeywords(projectId: string, onSaved?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (keywords: string[]) =>
+      saveKeywords({ data: { projectId, keywords } }),
+    onSuccess: (_result, keywords) => {
+      captureClientEvent("keyword:save", {
+        source_feature: "search_performance",
+        keyword_count: keywords.length,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["savedKeywords", projectId],
+      });
+      toast.success(
+        `Saved ${keywords.length} ${keywords.length === 1 ? "keyword" : "keywords"}`,
+      );
+      onSaved?.();
+    },
+  });
+}
+
 export function StrikingDistanceTable({
   projectId,
   rows,
@@ -251,7 +273,6 @@ export function StrikingDistanceTable({
   isFiltered: boolean;
   onClearFilters: () => void;
 }) {
-  const queryClient = useQueryClient();
   const anchorRef = useSelectionAnchor();
   const [rowSelection, setRowSelection] = useState({});
   const columns = useMemo(() => buildStrikingColumns(anchorRef), [anchorRef]);
@@ -291,23 +312,7 @@ export function StrikingDistanceTable({
     }
   };
 
-  const save = useMutation({
-    mutationFn: (keywords: string[]) =>
-      saveKeywords({ data: { projectId, keywords } }),
-    onSuccess: (_result, keywords) => {
-      captureClientEvent("keyword:save", {
-        source_feature: "search_performance",
-        keyword_count: keywords.length,
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ["savedKeywords", projectId],
-      });
-      toast.success(
-        `Saved ${keywords.length} ${keywords.length === 1 ? "keyword" : "keywords"}`,
-      );
-      setRowSelection({});
-    },
-  });
+  const save = useSaveKeywords(projectId, () => setRowSelection({}));
 
   return (
     <>
