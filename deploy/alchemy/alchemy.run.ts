@@ -10,6 +10,7 @@ import { unstable_readConfig } from "wrangler";
 import { z } from "zod";
 import {
   emailAccessGate,
+  ownerListProblem,
   HOSTED_PROD_STAGE,
   readWorkersSubdomain,
   requireAllowedEmails,
@@ -247,6 +248,11 @@ const resolveSelfHostAccess = (
       const allowedEmails = yield* requireAllowedEmails(
         "Set ACCESS_ALLOWED_EMAILS to the comma-separated emails allowed through Cloudflare Access — or set TEAM_DOMAIN and POLICY_AUD to manage the Access application yourself.",
       );
+      const ownerProblem = ownerListProblem(
+        allowedEmails,
+        yield* optionalVar("ACCESS_OWNER_EMAILS"),
+      );
+      if (ownerProblem) return yield* Effect.die(new Error(ownerProblem));
       const application = yield* emailAccessGate({
         policyId: "SelfHostAllowUsers",
         applicationId: "SelfHostAccess",
@@ -276,8 +282,8 @@ const dataEnv = {
   GOOGLE_CLIENT_SECRET: optionalSecret("GOOGLE_CLIENT_SECRET"),
   GOOGLE_SERVICE_ACCOUNT_JSON: optionalSecret("GOOGLE_SERVICE_ACCOUNT_JSON"),
   METRICS_INGEST_ENABLED: optionalVar("METRICS_INGEST_ENABLED"),
-  ACCESS_CLIENT_DOMAINS: optionalVar("ACCESS_CLIENT_DOMAINS"),
-  ACCESS_CLIENT_EMAILS: optionalVar("ACCESS_CLIENT_EMAILS"),
+  ACCESS_OWNER_EMAILS: optionalVar("ACCESS_OWNER_EMAILS"),
+  SAM_CLIENT_DAILY_TURNS: optionalVar("SAM_CLIENT_DAILY_TURNS"),
   OPENROUTER_API_KEY: optionalSecret("OPENROUTER_API_KEY"),
   OPENROUTER_MODEL: optionalVar("OPENROUTER_MODEL"),
   CONTEXT_API_KEY: optionalSecret("CONTEXT_API_KEY"),

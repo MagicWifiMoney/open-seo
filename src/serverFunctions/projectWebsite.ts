@@ -21,11 +21,13 @@ export const researchProjectWebsite = createServerFn({ method: "POST" })
 export const saveProjectWebsiteSetup = createServerFn({ method: "POST" })
   .middleware(requireProjectContext)
   .validator(saveProjectWebsiteSetupSchema)
-  .handler(({ data, context }) =>
-    ProjectWebsiteService.save(
+  .handler(({ data, context }) => {
+    // Setup seeds a scheduled AI tracker and starts its first run.
+    requireSpend(context);
+    return ProjectWebsiteService.save(
       { ...data, projectId: context.projectId },
       context,
       "user",
       { runSeededTracking: true },
-    ),
-  );
+    );
+  });

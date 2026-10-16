@@ -634,6 +634,7 @@ const BUSINESS_CATEGORY_COLUMNS: McpTableColumn<{
 
 export const listBusinessCategoriesTool = {
   name: "list_business_categories",
+  spend: true,
   config: {
     title: "List business categories",
     description:

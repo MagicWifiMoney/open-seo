@@ -1,42 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { resolveAccessRole } from "./accessRole";
 
-const env = {
-  ACCESS_CLIENT_DOMAINS: "millerestatesolutions.com, Other.org",
-  ACCESS_CLIENT_EMAILS: "Guest@Gmail.com",
-};
+const env = { ACCESS_OWNER_EMAILS: "Jake@Example.com, ops@example.com" };
 
 describe("resolveAccessRole", () => {
-  it("maps a listed domain to client", () => {
+  it("maps a listed email to owner, case-insensitively", () => {
+    expect(resolveAccessRole("jake@example.com", env)).toBe("owner");
+    expect(resolveAccessRole("OPS@EXAMPLE.COM", env)).toBe("owner");
+  });
+  it("maps everyone else to client", () => {
     expect(resolveAccessRole("a@millerestatesolutions.com", env)).toBe(
       "client",
     );
   });
-  it("maps an exact email to client", () => {
-    expect(resolveAccessRole("guest@gmail.com", env)).toBe("client");
+  it("does not match lookalike emails", () => {
+    expect(resolveAccessRole("xjake@example.com", env)).toBe("client");
+    expect(resolveAccessRole("jake@example.com.evil.io", env)).toBe("client");
   });
-  it("is case-insensitive", () => {
-    expect(resolveAccessRole("A@MillerEstateSolutions.COM", env)).toBe(
-      "client",
-    );
-    expect(resolveAccessRole("GUEST@GMAIL.COM", env)).toBe("client");
+  it("fails closed for an empty or missing email when owners are set", () => {
+    expect(resolveAccessRole("", env)).toBe("client");
+    expect(resolveAccessRole(undefined, env)).toBe("client");
+    expect(resolveAccessRole(null, env)).toBe("client");
   });
-  it("does not match a lookalike domain or subdomain", () => {
-    expect(resolveAccessRole("a@evil-millerestatesolutions.com", env)).toBe(
+  it("returns owner for everyone when the owner list is unset or blank", () => {
+    expect(resolveAccessRole("a@x.com", {})).toBe("owner");
+    expect(resolveAccessRole("a@x.com", { ACCESS_OWNER_EMAILS: " , " })).toBe(
       "owner",
     );
-    expect(resolveAccessRole("a@x.millerestatesolutions.com", env)).toBe(
-      "owner",
-    );
-  });
-  it("returns owner for unlisted users", () => {
-    expect(resolveAccessRole("jake@example.com", env)).toBe("owner");
-  });
-  it("returns owner when env is unset", () => {
-    expect(resolveAccessRole("a@millerestatesolutions.com", {})).toBe("owner");
-  });
-  it("returns owner for an empty email", () => {
-    expect(resolveAccessRole("", env)).toBe("owner");
-    expect(resolveAccessRole(undefined, env)).toBe("owner");
+    expect(resolveAccessRole("", {})).toBe("owner");
   });
 });

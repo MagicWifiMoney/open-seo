@@ -31,10 +31,12 @@ declare namespace Cloudflare {
     AUTH_MODE?: "cloudflare_access" | "local_noauth" | "hosted";
     MILLER_HUB_FEED_ENABLED?: string;
     METRICS_INGEST_ENABLED?: string;
-    // Comma-separated email domains / emails that get the read-only `client`
-    // role in cloudflare_access mode (everyone else admitted is an owner).
-    ACCESS_CLIENT_DOMAINS?: string;
-    ACCESS_CLIENT_EMAILS?: string;
+    // Comma-separated owner emails in cloudflare_access mode. When set,
+    // everyone else Access admits is a read-only `client`; unset means all
+    // admitted users are owners.
+    ACCESS_OWNER_EMAILS?: string;
+    // Per-user daily SAM chat turn cap for roles that cannot spend (default 60).
+    SAM_CLIENT_DAILY_TURNS?: string;
     MILLER_HUB_TRACKER_ID?: string;
     BYPASS_EMAIL_VERIFICATION?: string;
     TEAM_DOMAIN?: string;
