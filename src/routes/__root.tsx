@@ -145,11 +145,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               <PostHogBootstrap />
               {children}
               <ExportToSheetsModal />
-              <Toaster
-                position="bottom-right"
-                offset={{ bottom: 88 }}
-                mobileOffset={{ bottom: 140 }}
-              />
+              <Toaster position="bottom-right" mobileOffset={{ bottom: 100 }} />
               {showDevtools ? (
                 <TanStackDevtools
                   config={{ position: "bottom-right" }}
